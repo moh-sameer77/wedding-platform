@@ -1,0 +1,62 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "zusF-Y6RVLFS3FGTpG--Q"
+uri = "file://attached_assets/rose_frames/bouquet1.png"
+type = "image"
+title = "Pink rose bouquet"
+
+[[outputs]]
+id = "XQFSocJvpHI9oTyXUfQO6"
+uri = "file://attached_assets/rose_frames/border_etsy.jpg"
+type = "image"
+title = "border_etsy.jpg"
+
+[[outputs]]
+id = "fdLQ1GZJqETh98ZXq2BsE"
+uri = "file://attached_assets/rose_frames/frame1.png"
+type = "image"
+title = "Frame 1 – Wedding flower border"
+
+[[outputs]]
+id = "pM6q3t6n-P1CL-aGsI6MZ"
+uri = "file://attached_assets/rose_frames/corner1.png"
+type = "image"
+title = "Corner 1 – Floral corner (detailed)"
+
+[[outputs]]
+id = "eVs-CrhC4A8j8cAs7DEjK"
+uri = "file://attached_assets/rose_frames/corner2.png"
+type = "image"
+title = "Corner 2 – Floral corner decoration"
+
+[[outputs]]
+id = "I8cgn01aJ1VvfG8Kie7NV"
+uri = "file://attached_assets/rose_frames/border1.png"
+type = "image"
+title = "Border 1 – Invitation flower border"
+
+[[outputs]]
+id = "dzlAuZcfWXZ-KOw7fedsZ"
+uri = "file://attached_assets/rose_frames/corner3.png"
+type = "image"
+title = "Corner 3 – Flowers border"
+
+[[outputs]]
+id = "us9dE2Vhwd5mxFpdm5Lpg"
+uri = "file://attached_assets/rose_frames/wc_corner2.png"
+type = "image"
+title = "Watercolor corner – Vecteezy"
+
+[[outputs]]
+id = "l3SVN4ziFsrW7mf-RLci5"
+uri = "file://artifacts/wedding-invitation/public/rose-corner.png"
+type = "image"
+title = "Rose Corner Frame"
+
+[[outputs]]
+id = "eYgNkI7SlMmUHs8fHF-AE"
+uri = "file://artifacts/wedding-invitation/public/rose-bouquet.png"
+type = "image"
+title = "Rose Bouquet"

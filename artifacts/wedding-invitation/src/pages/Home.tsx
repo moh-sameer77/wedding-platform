@@ -119,84 +119,6 @@ const FloatingPetals = () => (
   </div>
 );
 
-/** Large watercolor-style rose cluster — used as background decoration */
-let _wcId = 0;
-const WatercolorRoseCluster = ({ opacity = 0.18 }: { opacity?: number }) => {
-  // Each instance gets a unique prefix so gradient/filter IDs don't collide across instances
-  const prefix = React.useRef(`wc${++_wcId}`).current;
-  return (
-  <svg viewBox="0 0 300 300" className="w-full h-full" style={{ opacity }}>
-    <defs>
-      <radialGradient id={`${prefix}-rose-a`} cx="35%" cy="30%" r="70%">
-        <stop offset="0%" stopColor="#FDECEC" />
-        <stop offset="45%" stopColor="#D4A0A0" />
-        <stop offset="100%" stopColor="#A86060" />
-      </radialGradient>
-      <radialGradient id={`${prefix}-rose-b`} cx="35%" cy="30%" r="70%">
-        <stop offset="0%" stopColor="#F8E6E6" />
-        <stop offset="50%" stopColor="#C98080" />
-        <stop offset="100%" stopColor="#905050" />
-      </radialGradient>
-      <radialGradient id={`${prefix}-rose-c`} cx="35%" cy="30%" r="70%">
-        <stop offset="0%" stopColor="#FBF0F0" />
-        <stop offset="55%" stopColor="#E0AAAA" />
-        <stop offset="100%" stopColor="#B07070" />
-      </radialGradient>
-      <linearGradient id={`${prefix}-leaf-a`} x1="0" y1="0" x2="1" y2="1">
-        <stop offset="0%" stopColor="#B8D4B8" />
-        <stop offset="100%" stopColor="#5A8A5A" />
-      </linearGradient>
-      <linearGradient id={`${prefix}-leaf-b`} x1="0" y1="0" x2="1" y2="1">
-        <stop offset="0%" stopColor="#A8C8A8" />
-        <stop offset="100%" stopColor="#4A7A4A" />
-      </linearGradient>
-      <filter id={`${prefix}-blur`}>
-        <feGaussianBlur stdDeviation="1.5" />
-      </filter>
-    </defs>
-
-    {/* Leaves */}
-    <path d="M 60 240 Q 20 200 40 160 Q 80 180 60 240 Z" fill={`url(#${prefix}-leaf-a)`} opacity="0.85" />
-    <path d="M 90 260 Q 60 220 80 185 Q 115 200 90 260 Z" fill={`url(#${prefix}-leaf-b)`} opacity="0.8" />
-    <path d="M 200 60 Q 240 20 260 55 Q 245 90 200 60 Z" fill={`url(#${prefix}-leaf-a)`} opacity="0.85" />
-    <path d="M 170 40 Q 200 10 225 38 Q 205 70 170 40 Z" fill={`url(#${prefix}-leaf-b)`} opacity="0.8" />
-    <path d="M 140 220 Q 120 260 155 265 Q 170 235 140 220 Z" fill={`url(#${prefix}-leaf-a)`} opacity="0.75" />
-    <path d="M 230 160 Q 270 150 268 185 Q 240 195 230 160 Z" fill={`url(#${prefix}-leaf-b)`} opacity="0.75" />
-
-    {/* Small bud top right */}
-    <g transform="translate(225, 50) scale(0.65)">
-      <circle cx="30" cy="30" r="26" fill={`url(#${prefix}-rose-c)`} filter={`url(#${prefix}-blur)`} />
-      <path d="M 14 12 C 30 2, 48 18, 36 36 C 22 52, 8 32, 14 12 Z" fill={`url(#${prefix}-rose-c)`} />
-      <path d="M 20 18 C 30 10, 42 22, 34 32 C 24 42, 14 28, 20 18 Z" fill="#FBF0F0" opacity="0.65" />
-    </g>
-
-    {/* Small rose bottom left */}
-    <g transform="translate(35, 190) scale(0.7) rotate(-20)">
-      <circle cx="30" cy="30" r="26" fill={`url(#${prefix}-rose-b)`} filter={`url(#${prefix}-blur)`} />
-      <path d="M 12 12 C 30 0, 50 18, 38 38 C 24 56, 6 34, 12 12 Z" fill={`url(#${prefix}-rose-b)`} />
-      <path d="M 18 18 C 30 8, 44 22, 36 34 C 24 46, 12 30, 18 18 Z" fill="#F8E6E6" opacity="0.65" />
-    </g>
-
-    {/* Medium rose mid */}
-    <g transform="translate(155, 140) scale(0.85) rotate(15)">
-      <circle cx="35" cy="35" r="30" fill={`url(#${prefix}-rose-c)`} filter={`url(#${prefix}-blur)`} />
-      <path d="M 15 10 C 35 -5, 58 18, 46 42 C 32 64, 8 42, 15 10 Z" fill={`url(#${prefix}-rose-c)`} />
-      <path d="M 20 16 C 35 5, 52 22, 42 38 C 28 54, 14 34, 20 16 Z" fill="#FBF0F0" opacity="0.6" />
-      <path d="M 28 24 C 35 18, 44 26, 38 34 C 30 42, 23 32, 28 24 Z" fill="white" opacity="0.4" />
-    </g>
-
-    {/* Main large rose center */}
-    <g transform="translate(70, 70)">
-      <circle cx="60" cy="60" r="55" fill={`url(#${prefix}-rose-a)`} filter={`url(#${prefix}-blur)`} opacity="0.9" />
-      <path d="M 25 15 C 60 -8, 100 28, 82 70 C 62 112, 12 80, 25 15 Z" fill={`url(#${prefix}-rose-a)`} />
-      <path d="M 32 22 C 60 5, 94 34, 78 68 C 60 100, 18 70, 32 22 Z" fill={`url(#${prefix}-rose-b)`} opacity="0.75" />
-      <path d="M 40 32 C 60 18, 84 40, 72 64 C 56 86, 28 62, 40 32 Z" fill="#FDECEC" opacity="0.7" />
-      <path d="M 48 42 C 60 32, 76 46, 66 62 C 54 76, 40 58, 48 42 Z" fill="white" opacity="0.55" />
-      <path d="M 54 50 C 60 44, 68 52, 62 60 C 56 66, 50 56, 54 50 Z" fill="white" opacity="0.4" />
-    </g>
-  </svg>
-  );
-};
 
 const DividerSVG = () => (
   <div className="w-full max-w-md mx-auto my-10 sm:my-14 flex justify-center opacity-75">
@@ -505,20 +427,6 @@ export default function WeddingInvitation() {
               <div className="absolute inset-3 sm:inset-5 border border-[#C9A96E]/60 pointer-events-none z-10 opacity-65" />
               <div className="absolute inset-5 sm:inset-7 border-[0.5px] border-[#C9A96E]/35 pointer-events-none z-10 opacity-45" />
 
-              {/* Lush watercolor rose background — corners */}
-              <div className="absolute -top-16 -left-16 w-72 h-72 sm:w-96 sm:h-96 pointer-events-none" style={{ zIndex: 0 }}>
-                <WatercolorRoseCluster opacity={0.22} />
-              </div>
-              <div className="absolute -bottom-16 -right-16 w-72 h-72 sm:w-96 sm:h-96 pointer-events-none rotate-180" style={{ zIndex: 0 }}>
-                <WatercolorRoseCluster opacity={0.22} />
-              </div>
-              <div className="absolute -top-10 -right-10 w-56 h-56 sm:w-72 sm:h-72 pointer-events-none rotate-90" style={{ zIndex: 0 }}>
-                <WatercolorRoseCluster opacity={0.16} />
-              </div>
-              <div className="absolute -bottom-10 -left-10 w-56 h-56 sm:w-72 sm:h-72 pointer-events-none -rotate-90" style={{ zIndex: 0 }}>
-                <WatercolorRoseCluster opacity={0.16} />
-              </div>
-
               <Sparkles />
 
               {/* Top garland */}
@@ -526,118 +434,35 @@ export default function WeddingInvitation() {
                 <GarlandSVG />
               </div>
 
-              {/* Corner rose clusters — on top of bg */}
-              <motion.div
-                className="absolute top-2 left-2 z-10 pointer-events-none"
-                initial={{ opacity: 0, scale: 0.9 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ duration: 1.5 }}
-              >
-                <svg viewBox="0 0 180 180" className="w-36 h-36 sm:w-52 sm:h-52">
-                  <defs>
-                    <radialGradient id="cr-rose" cx="35%" cy="30%" r="70%">
-                      <stop offset="0%" stopColor="#FDECEC" /><stop offset="50%" stopColor="#D4A0A0" /><stop offset="100%" stopColor="#A86060" />
-                    </radialGradient>
-                    <linearGradient id="cr-leaf" x1="0" y1="0" x2="1" y2="1">
-                      <stop offset="0%" stopColor="#B4D0B4" /><stop offset="100%" stopColor="#5A8A5A" />
-                    </linearGradient>
-                  </defs>
-                  <path d="M 8 160 Q -10 120 15 85 Q 50 110 8 160 Z" fill="url(#cr-leaf)" opacity="0.8" />
-                  <path d="M 30 170 Q 10 135 35 100 Q 65 120 30 170 Z" fill="url(#cr-leaf)" opacity="0.7" />
-                  <path d="M 80 20 Q 110 -10 130 15 Q 115 50 80 20 Z" fill="url(#cr-leaf)" opacity="0.8" />
-                  <path d="M 55 10 Q 80 -15 100 10 Q 85 40 55 10 Z" fill="url(#cr-leaf)" opacity="0.7" />
-                  <g transform="translate(25, 75)">
-                    <circle cx="35" cy="35" r="30" fill="url(#cr-rose)" opacity="0.85" />
-                    <path d="M 12 10 C 35 -2, 60 20, 46 48 C 30 70, 5 45, 12 10 Z" fill="url(#cr-rose)" />
-                    <path d="M 18 16 C 35 6, 55 24, 42 44 C 26 62, 10 38, 18 16 Z" fill="#FDECEC" opacity="0.65" />
-                    <path d="M 26 24 C 35 16, 46 28, 40 40 C 30 50, 20 36, 26 24 Z" fill="white" opacity="0.4" />
-                  </g>
-                  <g transform="translate(80, 10) scale(0.6)">
-                    <circle cx="28" cy="28" r="22" fill="url(#cr-rose)" opacity="0.8" />
-                    <path d="M 10 8 C 28 -2, 48 16, 36 40 C 22 58, 4 34, 10 8 Z" fill="url(#cr-rose)" opacity="0.75" />
-                    <path d="M 16 14 C 28 5, 44 20, 34 36 C 22 50, 10 28, 16 14 Z" fill="#FDECEC" opacity="0.6" />
-                  </g>
-                  <g transform="translate(5, 55) scale(0.55)">
-                    <circle cx="24" cy="24" r="20" fill="url(#cr-rose)" opacity="0.78" />
-                    <path d="M 8 6 C 24 -2, 42 14, 30 34 C 18 52, 2 28, 8 6 Z" fill="url(#cr-rose)" opacity="0.7" />
-                    <path d="M 14 12 C 24 4, 38 18, 28 30 C 18 44, 8 24, 14 12 Z" fill="#FDECEC" opacity="0.55" />
-                  </g>
-                </svg>
-              </motion.div>
-
-              <motion.div
-                className="absolute bottom-2 right-2 z-10 pointer-events-none rotate-180"
-                initial={{ opacity: 0, scale: 0.9 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ duration: 1.5 }}
-              >
-                <svg viewBox="0 0 180 180" className="w-36 h-36 sm:w-52 sm:h-52">
-                  <defs>
-                    <radialGradient id="cr-rose2" cx="35%" cy="30%" r="70%">
-                      <stop offset="0%" stopColor="#FDECEC" /><stop offset="50%" stopColor="#D4A0A0" /><stop offset="100%" stopColor="#A86060" />
-                    </radialGradient>
-                    <linearGradient id="cr-leaf2" x1="0" y1="0" x2="1" y2="1">
-                      <stop offset="0%" stopColor="#B4D0B4" /><stop offset="100%" stopColor="#5A8A5A" />
-                    </linearGradient>
-                  </defs>
-                  <path d="M 8 160 Q -10 120 15 85 Q 50 110 8 160 Z" fill="url(#cr-leaf2)" opacity="0.8" />
-                  <path d="M 30 170 Q 10 135 35 100 Q 65 120 30 170 Z" fill="url(#cr-leaf2)" opacity="0.7" />
-                  <path d="M 80 20 Q 110 -10 130 15 Q 115 50 80 20 Z" fill="url(#cr-leaf2)" opacity="0.8" />
-                  <g transform="translate(25, 75)">
-                    <circle cx="35" cy="35" r="30" fill="url(#cr-rose2)" opacity="0.85" />
-                    <path d="M 12 10 C 35 -2, 60 20, 46 48 C 30 70, 5 45, 12 10 Z" fill="url(#cr-rose2)" />
-                    <path d="M 18 16 C 35 6, 55 24, 42 44 C 26 62, 10 38, 18 16 Z" fill="#FDECEC" opacity="0.65" />
-                    <path d="M 26 24 C 35 16, 46 28, 40 40 C 30 50, 20 36, 26 24 Z" fill="white" opacity="0.4" />
-                  </g>
-                  <g transform="translate(80, 10) scale(0.6)">
-                    <circle cx="28" cy="28" r="22" fill="url(#cr-rose2)" opacity="0.8" />
-                    <path d="M 10 8 C 28 -2, 48 16, 36 40 C 22 58, 4 34, 10 8 Z" fill="url(#cr-rose2)" opacity="0.75" />
-                    <path d="M 16 14 C 28 5, 44 20, 34 36 C 22 50, 10 28, 16 14 Z" fill="#FDECEC" opacity="0.6" />
-                  </g>
-                </svg>
-              </motion.div>
-
-              <motion.div
-                className="absolute top-2 right-2 z-10 pointer-events-none"
-                initial={{ opacity: 0, scale: 0.9 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ duration: 1.5, delay: 0.3 }}
-              >
-                <svg viewBox="0 0 140 140" className="w-28 h-28 sm:w-40 sm:h-40">
-                  <defs>
-                    <radialGradient id="cr-rose3" cx="35%" cy="30%" r="70%">
-                      <stop offset="0%" stopColor="#FDECEC" /><stop offset="50%" stopColor="#D4A0A0" /><stop offset="100%" stopColor="#A86060" />
-                    </radialGradient>
-                    <linearGradient id="cr-leaf3" x1="0" y1="0" x2="1" y2="1">
-                      <stop offset="0%" stopColor="#B4D0B4" /><stop offset="100%" stopColor="#5A8A5A" />
-                    </linearGradient>
-                  </defs>
-                  <path d="M 120 20 Q 150 -5 140 30 Q 110 50 120 20 Z" fill="url(#cr-leaf3)" opacity="0.75" />
-                  <path d="M 100 8 Q 130 -8 125 20 Q 98 35 100 8 Z" fill="url(#cr-leaf3)" opacity="0.7" />
-                  <g transform="translate(55, 30) rotate(-20)">
-                    <circle cx="28" cy="28" r="24" fill="url(#cr-rose3)" opacity="0.82" />
-                    <path d="M 10 8 C 28 -2, 48 16, 36 42 C 22 60, 4 34, 10 8 Z" fill="url(#cr-rose3)" opacity="0.8" />
-                    <path d="M 16 14 C 28 4, 44 20, 34 38 C 22 52, 8 28, 16 14 Z" fill="#FDECEC" opacity="0.6" />
-                  </g>
-                </svg>
-              </motion.div>
-
-              <motion.div
-                className="absolute bottom-2 left-2 z-10 pointer-events-none"
-                initial={{ opacity: 0, scale: 0.9 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ duration: 1.5, delay: 0.3 }}
-              >
-                <svg viewBox="0 0 140 140" className="w-28 h-28 sm:w-40 sm:h-40">
-                  <defs>
-                    <radialGradient id="cr-rose4" cx="35%" cy="30%" r="70%">
-                      <stop offset="0%" stopColor="#FDECEC" /><stop offset="50%" stopColor="#D4A0A0" /><stop offset="100%" stopColor="#A86060" />
-                    </radialGradient>
-                    <linearGradient id="cr-leaf4" x1="0" y1="0" x2="1" y2="1">
-                      <stop offset="0%" stopColor="#B4D0B4" /><stop offset="100%" stopColor="#5A8A5A" />
-                    </linearGradient>
-                  </defs>
-                  <path d="M 20 120 Q -5 145 30 140 Q 50 115 20 120 Z" fill="url(#cr-leaf4)" opacity="0.75" />
-                  <path d="M 8 100 Q -8 130 20 128 Q 35 102 8 100 Z" fill="url(#cr-leaf4)" opacity="0.7" />
-                  <g transform="translate(30, 40) rotate(20)">
-                    <circle cx="28" cy="28" r="24" fill="url(#cr-rose4)" opacity="0.82" />
-                    <path d="M 10 8 C 28 -2, 48 16, 36 42 C 22 60, 4 34, 10 8 Z" fill="url(#cr-rose4)" opacity="0.8" />
-                    <path d="M 16 14 C 28 4, 44 20, 34 38 C 22 52, 8 28, 16 14 Z" fill="#FDECEC" opacity="0.6" />
-                  </g>
-                </svg>
-              </motion.div>
+              {/* Real PNG rose corners — one image, mirrored/rotated into all 4 corners */}
+              <motion.img
+                src="/rose-corner.png"
+                alt=""
+                className="absolute top-0 left-0 pointer-events-none select-none"
+                style={{ width: 'clamp(160px, 35%, 260px)', zIndex: 5, transformOrigin: 'top left' }}
+                initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 1.4 }}
+              />
+              <motion.img
+                src="/rose-corner.png"
+                alt=""
+                className="absolute top-0 right-0 pointer-events-none select-none"
+                style={{ width: 'clamp(160px, 35%, 260px)', zIndex: 5, transform: 'scaleX(-1)', transformOrigin: 'top right' }}
+                initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 1.4, delay: 0.2 }}
+              />
+              <motion.img
+                src="/rose-corner.png"
+                alt=""
+                className="absolute bottom-0 left-0 pointer-events-none select-none"
+                style={{ width: 'clamp(160px, 35%, 260px)', zIndex: 5, transform: 'scaleY(-1)', transformOrigin: 'bottom left' }}
+                initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 1.4, delay: 0.4 }}
+              />
+              <motion.img
+                src="/rose-corner.png"
+                alt=""
+                className="absolute bottom-0 right-0 pointer-events-none select-none"
+                style={{ width: 'clamp(160px, 35%, 260px)', zIndex: 5, transform: 'scale(-1, -1)', transformOrigin: 'bottom right' }}
+                initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 1.4, delay: 0.6 }}
+              />
 
               {/* Content */}
               <div className="w-full flex-grow flex flex-col items-center justify-center relative z-20 space-y-8 sm:space-y-10 py-16 sm:py-20 px-4">
