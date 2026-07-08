@@ -60,3 +60,21 @@ id = "eYgNkI7SlMmUHs8fHF-AE"
 uri = "file://artifacts/wedding-invitation/public/rose-bouquet.png"
 type = "image"
 title = "Rose Bouquet"
+
+[[outputs]]
+id = "HnXKcuM9U9UMaHoT-KOOc"
+uri = "file://artifacts/wedding-invitation/public/floral-top-left.png"
+type = "image"
+title = "Botanical Top-Left"
+
+[[outputs]]
+id = "ShATiY-qNkIzJ3NQLo3_f"
+uri = "file://artifacts/wedding-invitation/public/floral-top-right.png"
+type = "image"
+title = "Botanical Top-Right"
+
+[[outputs]]
+id = "deJ-rNZdRZvK4xY0ZiHCN"
+uri = "file://artifacts/wedding-invitation/public/floral-bottom.png"
+type = "image"
+title = "Botanical Bottom"

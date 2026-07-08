@@ -36,90 +36,6 @@ const WaxSealSVG = () => (
   </svg>
 );
 
-const PostageStamp = () => (
-  <div
-    className="absolute top-3 right-3 w-14 h-[4.2rem] z-10 rotate-[3deg]"
-    style={{
-      background: '#FAF7F2',
-      boxShadow: '0 1px 4px rgba(0,0,0,0.12)',
-      backgroundImage: 'radial-gradient(circle, transparent 3.5px, #FAF7F2 3.5px)',
-      backgroundSize: '7px 7px',
-      backgroundPosition: '-3.5px -3.5px',
-    }}
-  >
-    <div className="absolute inset-[5px] border border-[#C9A96E]/70 flex flex-col items-center justify-center gap-0.5 overflow-hidden bg-[#FAF7F2]">
-      <svg viewBox="0 0 44 36" className="w-9 h-7">
-        <defs>
-          <radialGradient id="s-rose" cx="38%" cy="32%" r="65%">
-            <stop offset="0%" stopColor="#FDECEC" />
-            <stop offset="50%" stopColor="#D4A0A0" />
-            <stop offset="100%" stopColor="#B07070" />
-          </radialGradient>
-          <radialGradient id="s-rose2" cx="38%" cy="32%" r="65%">
-            <stop offset="0%" stopColor="#F8E0E0" />
-            <stop offset="100%" stopColor="#C08080" />
-          </radialGradient>
-          <linearGradient id="s-leaf" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stopColor="#B4D0B4" />
-            <stop offset="100%" stopColor="#6B9B6B" />
-          </linearGradient>
-        </defs>
-        {/* Leaves */}
-        <path d="M 5 30 Q 0 22 6 18 Q 12 22 5 30 Z" fill="url(#s-leaf)" opacity="0.9" />
-        <path d="M 39 30 Q 44 22 38 18 Q 32 22 39 30 Z" fill="url(#s-leaf)" opacity="0.9" />
-        <path d="M 20 32 Q 15 25 22 22 Q 29 25 20 32 Z" fill="url(#s-leaf)" opacity="0.8" />
-        {/* Small roses */}
-        <circle cx="7" cy="18" r="5" fill="url(#s-rose2)" />
-        <path d="M 4 15 C 7 12, 10 16, 7 20 C 4 22, 2 17, 4 15 Z" fill="#FDECEC" opacity="0.7" />
-        <circle cx="37" cy="18" r="5" fill="url(#s-rose2)" />
-        <path d="M 34 15 C 37 12, 40 16, 37 20 C 34 22, 32 17, 34 15 Z" fill="#FDECEC" opacity="0.7" />
-        {/* Main central rose */}
-        <circle cx="22" cy="15" r="9" fill="url(#s-rose)" />
-        <path d="M 16 10 C 22 5, 30 11, 24 19 C 17 27, 12 17, 16 10 Z" fill="url(#s-rose)" opacity="0.8" />
-        <path d="M 18 12 C 22 9, 27 13, 22 18 C 17 22, 14 16, 18 12 Z" fill="#FDECEC" opacity="0.7" />
-        <path d="M 20 14 C 22 12, 24 15, 22 17 C 20 19, 19 15, 20 14 Z" fill="white" opacity="0.5" />
-      </svg>
-      <span className="text-[4.5px] uppercase tracking-wider text-[#C9A96E] font-serif leading-none">Jordan · 2026</span>
-    </div>
-  </div>
-);
-
-const PetalSVG = ({ className, style }: { className?: string; style?: React.CSSProperties }) => (
-  <svg viewBox="0 0 20 30" className={className} style={style}>
-    {/* No shared defs — use direct fill to avoid ID collisions across instances */}
-    <path d="M10,0 C15,0 20,10 15,20 C10,30 5,25 0,15 C-2,5 5,0 10,0 Z" fill="#D4A0A0" opacity="0.72" />
-  </svg>
-);
-
-const FloatingPetals = () => (
-  <div className="fixed inset-0 pointer-events-none z-30 overflow-hidden">
-    {Array.from({ length: 14 }).map((_, i) => {
-      const left = `${(i * 7.2) % 100}%`;
-      const delay = i * 1.8;
-      const duration = 14 + (i % 5) * 3;
-      const scale = 0.45 + (i % 4) * 0.18;
-      return (
-        <motion.div
-          key={i}
-          className="absolute top-[-50px]"
-          style={{ left }}
-          initial={{ y: '-10vh', x: 0, rotate: 0, opacity: 0 }}
-          animate={{
-            y: ['-10vh', '110vh'],
-            x: [0, (i % 2 === 0 ? 60 : -60), (i % 2 === 0 ? -40 : 40), 0],
-            rotate: [0, 180, 360],
-            opacity: [0, 0.65, 0.65, 0],
-          }}
-          transition={{ duration, delay, repeat: Infinity, ease: 'linear' }}
-        >
-          <PetalSVG className="w-4 h-6" style={{ transform: `scale(${scale})` }} />
-        </motion.div>
-      );
-    })}
-  </div>
-);
-
-
 const DividerSVG = () => (
   <div className="w-full max-w-md mx-auto my-10 sm:my-14 flex justify-center opacity-75">
     <svg viewBox="0 0 320 24" className="w-full h-5 sm:h-7">
@@ -135,53 +51,6 @@ const DividerSVG = () => (
   </div>
 );
 
-const GarlandSVG = () => (
-  <svg viewBox="0 0 1000 90" preserveAspectRatio="none" className="w-full h-20 sm:h-28 pointer-events-none">
-    <defs>
-      <linearGradient id="garland-leaf" x1="0" y1="0" x2="1" y2="1">
-        <stop offset="0%" stopColor="#B4D0B4" />
-        <stop offset="100%" stopColor="#5A8A5A" />
-      </linearGradient>
-      <radialGradient id="garland-rose" cx="35%" cy="30%" r="70%">
-        <stop offset="0%" stopColor="#FDECEC" />
-        <stop offset="55%" stopColor="#D4A0A0" />
-        <stop offset="100%" stopColor="#A86060" />
-      </radialGradient>
-      <radialGradient id="garland-rose-sm" cx="35%" cy="30%" r="70%">
-        <stop offset="0%" stopColor="#F8E6E6" />
-        <stop offset="100%" stopColor="#C08080" />
-      </radialGradient>
-    </defs>
-    <path d="M -40 15 Q 250 70 500 35 T 1040 15" fill="none" stroke="#8FAF8F" strokeWidth="2" opacity="0.5" />
-    <path d="M 0 0 Q 280 85 500 50 T 1000 0" fill="none" stroke="#6B9B6B" strokeWidth="1.5" opacity="0.7" />
-
-    {[
-      { x: 80,  y: 42, r: 30, rose: true },
-      { x: 200, y: 66, r: 22, rose: false },
-      { x: 340, y: 56, r: 26, rose: true },
-      { x: 500, y: 46, r: 28, rose: false },
-      { x: 650, y: 58, r: 24, rose: true },
-      { x: 790, y: 68, r: 22, rose: false },
-      { x: 920, y: 44, r: 26, rose: true },
-    ].map((pt, i) => (
-      <g key={i} transform={`translate(${pt.x}, ${pt.y}) rotate(${i % 2 === 0 ? 12 : -12})`}>
-        <path d="M 0 0 Q 14 18 0 28 Q -14 18 0 0 Z" fill="url(#garland-leaf)" transform="scale(0.9) rotate(50)" opacity="0.8" />
-        <path d="M 0 0 Q 18 8 28 0 Q 18 -8 0 0 Z" fill="url(#garland-leaf)" transform="scale(0.8) rotate(-25)" opacity="0.8" />
-        <path d="M 0 0 Q -14 18 0 28 Q 14 18 0 0 Z" fill="url(#garland-leaf)" transform="scale(0.7) rotate(130)" opacity="0.7" />
-        {pt.rose ? (
-          <g>
-            <circle cx="0" cy="0" r="11" fill="url(#garland-rose)" opacity="0.9" />
-            <path d="M -6 -7 C 0 -12, 8 -4, 4 6 C 0 14, -8 6, -6 -7 Z" fill="url(#garland-rose)" opacity="0.75" />
-            <path d="M -3 -4 C 0 -8, 6 -2, 3 4 C 0 9, -4 3, -3 -4 Z" fill="#FDECEC" opacity="0.6" />
-          </g>
-        ) : (
-          <circle cx="0" cy="0" r="7" fill="url(#garland-rose-sm)" opacity="0.75" />
-        )}
-      </g>
-    ))}
-  </svg>
-);
-
 const PineTreeSVG = () => (
   <svg viewBox="0 0 50 65" className="w-10 h-12 sm:w-12 sm:h-14 mb-1">
     <path d="M 25 58 L 25 65" stroke="#7A5A2B" strokeWidth="3" strokeLinecap="round" />
@@ -189,26 +58,6 @@ const PineTreeSVG = () => (
     <path d="M 25 20 L 40 40 L 10 40 Z" fill="#5A8A5A" stroke="#4A7A4A" strokeWidth="0.5" />
     <path d="M 25 5 L 37 26 L 13 26 Z" fill="#6B9B6B" stroke="#5A8A5A" strokeWidth="0.5" />
   </svg>
-);
-
-const Sparkles = () => (
-  <div className="absolute inset-0 pointer-events-none overflow-hidden" style={{ zIndex: 1 }}>
-    {Array.from({ length: 14 }).map((_, i) => (
-      <motion.div
-        key={i}
-        className="absolute text-[#C9A96E]/40 font-serif"
-        style={{
-          left: `${(i * 13 + 5) % 95}%`,
-          top: `${(i * 17 + 8) % 90}%`,
-          fontSize: `${7 + (i % 4) * 3}px`,
-        }}
-        animate={{ opacity: [0, 0.8, 0], scale: [0.5, 1.3, 0.5] }}
-        transition={{ duration: 2.5 + (i % 3), delay: (i * 0.7) % 5, repeat: Infinity }}
-      >
-        ✦
-      </motion.div>
-    ))}
-  </div>
 );
 
 /** Calendar popover */
@@ -377,24 +226,6 @@ export default function WeddingInvitation() {
 
                 {/* Texture + border */}
                 <div className="absolute inset-3 border-[0.5px] border-[#C9A96E] opacity-35 z-0 pointer-events-none" />
-
-                <PostageStamp />
-
-                {/* Scattered petals on envelope */}
-                {[
-                  { top: '15%', left: '12%', r: 45 },
-                  { top: '70%', left: '20%', r: 120 },
-                  { top: '25%', left: '75%', r: 200 },
-                  { top: '60%', left: '65%', r: 80 },
-                  { top: '45%', left: '8%',  r: 160 },
-                  { top: '80%', left: '55%', r: 30 },
-                ].map((p, i) => (
-                  <PetalSVG
-                    key={`env-petal-${i}`}
-                    className="absolute w-3 h-4 opacity-60 z-10 pointer-events-none"
-                    style={{ top: p.top, left: p.left, transform: `rotate(${p.r}deg) scale(0.8)` }}
-                  />
-                ))}
               </div>
             </div>
 
@@ -419,49 +250,33 @@ export default function WeddingInvitation() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 1.5, ease: 'easeOut' }}
           >
-            <FloatingPetals />
-
             <div className="w-full max-w-2xl lg:max-w-3xl mx-auto min-h-screen px-4 sm:px-8 py-12 md:py-24 flex flex-col items-center relative shadow-2xl bg-[#FAF7F2] shadow-black/40 border border-[#C9A96E]/25 overflow-hidden">
 
               {/* Double border frame */}
               <div className="absolute inset-3 sm:inset-5 border border-[#C9A96E]/60 pointer-events-none z-10 opacity-65" />
               <div className="absolute inset-5 sm:inset-7 border-[0.5px] border-[#C9A96E]/35 pointer-events-none z-10 opacity-45" />
 
-              <Sparkles />
-
-              {/* Top garland */}
-              <div className="absolute top-0 inset-x-0 z-10 pointer-events-none flex justify-center">
-                <GarlandSVG />
-              </div>
-
-              {/* Real PNG rose corners — one image, mirrored/rotated into all 4 corners */}
+              {/* Botanical illustration florals — matching Eddie & Farah reference style */}
               <motion.img
-                src="/rose-corner.png"
+                src="/floral-top-left.png"
                 alt=""
                 className="absolute top-0 left-0 pointer-events-none select-none"
-                style={{ width: 'clamp(160px, 35%, 260px)', zIndex: 5, transformOrigin: 'top left' }}
+                style={{ width: 'clamp(170px, 42%, 300px)', zIndex: 5, transformOrigin: 'top left' }}
                 initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 1.4 }}
               />
               <motion.img
-                src="/rose-corner.png"
+                src="/floral-top-right.png"
                 alt=""
                 className="absolute top-0 right-0 pointer-events-none select-none"
-                style={{ width: 'clamp(160px, 35%, 260px)', zIndex: 5, transform: 'scaleX(-1)', transformOrigin: 'top right' }}
+                style={{ width: 'clamp(170px, 42%, 300px)', zIndex: 5, transformOrigin: 'top right' }}
                 initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 1.4, delay: 0.2 }}
               />
               <motion.img
-                src="/rose-corner.png"
+                src="/floral-bottom.png"
                 alt=""
-                className="absolute bottom-0 left-0 pointer-events-none select-none"
-                style={{ width: 'clamp(160px, 35%, 260px)', zIndex: 5, transform: 'scaleY(-1)', transformOrigin: 'bottom left' }}
+                className="absolute bottom-0 left-0 right-0 w-full pointer-events-none select-none"
+                style={{ zIndex: 5 }}
                 initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 1.4, delay: 0.4 }}
-              />
-              <motion.img
-                src="/rose-corner.png"
-                alt=""
-                className="absolute bottom-0 right-0 pointer-events-none select-none"
-                style={{ width: 'clamp(160px, 35%, 260px)', zIndex: 5, transform: 'scale(-1, -1)', transformOrigin: 'bottom right' }}
-                initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 1.4, delay: 0.6 }}
               />
 
               {/* Content */}
