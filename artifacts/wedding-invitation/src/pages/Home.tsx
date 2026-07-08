@@ -37,7 +37,13 @@ const WaxSealSVG = () => (
 );
 
 const DividerSVG = () => (
-  <div className="w-full max-w-md mx-auto my-10 sm:my-14 flex justify-center opacity-75">
+  <motion.div
+    className="w-full max-w-md mx-auto my-10 sm:my-14 flex justify-center"
+    initial={{ opacity: 0, y: 24 }}
+    whileInView={{ opacity: 0.75, y: 0 }}
+    viewport={{ once: true, amount: 0.4 }}
+    transition={{ duration: 0.9, ease: 'easeOut' }}
+  >
     <svg viewBox="0 0 320 24" className="w-full h-5 sm:h-7">
       <path d="M 0 12 L 118 12" stroke="#C9A96E" strokeWidth="0.6" />
       <path d="M 202 12 L 320 12" stroke="#C9A96E" strokeWidth="0.6" />
@@ -48,7 +54,7 @@ const DividerSVG = () => (
       <circle cx="116" cy="12" r="1.5" fill="#C9A96E" opacity="0.5" />
       <circle cx="204" cy="12" r="1.5" fill="#C9A96E" opacity="0.5" />
     </svg>
-  </div>
+  </motion.div>
 );
 
 const PineTreeSVG = () => (
@@ -250,7 +256,10 @@ export default function WeddingInvitation() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 1.5, ease: 'easeOut' }}
           >
-            <div className="w-full max-w-2xl lg:max-w-3xl mx-auto min-h-screen px-4 sm:px-8 py-12 md:py-24 flex flex-col items-center relative shadow-2xl bg-[#FAF7F2] shadow-black/40 border border-[#C9A96E]/25 overflow-hidden">
+            <div
+              className="w-full max-w-2xl lg:max-w-3xl mx-auto min-h-screen px-4 sm:px-8 py-12 md:py-24 flex flex-col items-center relative shadow-2xl bg-[#FAF7F2] shadow-black/40 border border-[#C9A96E]/25 overflow-hidden"
+              style={{ '--floral-h': 'clamp(150px, 30vw, 280px)', paddingBottom: 'calc(var(--floral-h) + 28px)' } as React.CSSProperties}
+            >
 
               {/* Double border frame */}
               <div className="absolute inset-3 sm:inset-5 border border-[#C9A96E]/60 pointer-events-none z-10 opacity-65" />
@@ -271,11 +280,12 @@ export default function WeddingInvitation() {
                 style={{ width: 'clamp(170px, 42%, 300px)', zIndex: 5, transformOrigin: 'top right' }}
                 initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 1.4, delay: 0.2 }}
               />
+              {/* Bottom floral frame — cropped to its densest band, height reserved via padding so content never overlaps it */}
               <motion.img
                 src="/floral-bottom.png"
                 alt=""
                 className="absolute bottom-0 left-0 right-0 w-full pointer-events-none select-none"
-                style={{ zIndex: 5 }}
+                style={{ height: 'var(--floral-h)', objectFit: 'cover', objectPosition: 'bottom', zIndex: 1 } as React.CSSProperties}
                 initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 1.4, delay: 0.4 }}
               />
 
@@ -285,7 +295,7 @@ export default function WeddingInvitation() {
                 {/* Header tagline */}
                 <motion.div
                   className="flex items-center gap-3 sm:gap-4 text-center mt-8 sm:mt-0"
-                  initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 1, delay: 0.2 }}
+                  initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.4 }} transition={{ duration: 0.9, ease: 'easeOut' }}
                 >
                   <span className="text-[#C9A96E] text-sm">✦</span>
                   <p className="tracking-[0.18em] sm:tracking-[0.22em] text-[10px] sm:text-xs uppercase text-[#3C3228]/65 font-medium">Together with their families</p>
@@ -295,7 +305,7 @@ export default function WeddingInvitation() {
                 {/* Names */}
                 <motion.div
                   className="text-center w-full my-2 sm:my-6"
-                  initial={{ opacity: 0, scale: 0.95 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ duration: 1.2, delay: 0.4 }}
+                  initial={{ opacity: 0, y: 40, scale: 0.95 }} whileInView={{ opacity: 1, y: 0, scale: 1 }} viewport={{ once: true, amount: 0.4 }} transition={{ duration: 1, ease: 'easeOut' }}
                 >
                   <h1 className="font-script text-[4.5rem] sm:text-[6.5rem] md:text-[8rem] text-[#3C3228] leading-[0.85] tracking-normal mb-1 sm:mb-3" style={{ textShadow: '1px 2px 0px rgba(201,169,110,0.35)' }}>
                     Mohammad
@@ -313,7 +323,7 @@ export default function WeddingInvitation() {
                 {/* Request line */}
                 <motion.div
                   className="text-center max-w-sm mx-auto"
-                  initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 1, delay: 0.6 }}
+                  initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.4 }} transition={{ duration: 0.9, ease: 'easeOut' }}
                 >
                   <p className="text-base sm:text-lg text-[#3C3228]/75 leading-relaxed italic font-serif px-4">
                     joyfully request the honor of your presence<br />at their wedding celebration
@@ -323,7 +333,7 @@ export default function WeddingInvitation() {
                 {/* Date — clean, no banner */}
                 <motion.div
                   className="flex items-center gap-3 sm:gap-4 w-full max-w-xs sm:max-w-sm mx-auto"
-                  initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 1, delay: 0.8 }}
+                  initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.4 }} transition={{ duration: 0.9, ease: 'easeOut' }}
                 >
                   <div className="h-[0.5px] flex-1 bg-gradient-to-r from-transparent via-[#C9A96E]/60 to-[#C9A96E]/60" />
                   <p className="text-[11px] sm:text-xs uppercase tracking-[0.22em] text-[#3C3228]/65 font-serif whitespace-nowrap">
@@ -335,7 +345,7 @@ export default function WeddingInvitation() {
                 {/* Venue */}
                 <motion.div
                   className="flex flex-col items-center w-full max-w-[300px] sm:max-w-sm mx-auto mt-2 sm:mt-4"
-                  initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 1, delay: 1 }}
+                  initial={{ opacity: 0, y: 40 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.35 }} transition={{ duration: 1, ease: 'easeOut' }}
                 >
                   <div className="p-6 sm:p-10 bg-[#FDFBF7] border-[0.5px] border-[#C9A96E]/50 rounded-t-full w-full flex flex-col items-center gap-2 sm:gap-3 shadow-sm relative overflow-hidden">
                     <PineTreeSVG />
@@ -389,8 +399,8 @@ export default function WeddingInvitation() {
 
               {/* RSVP */}
               <motion.div
-                className="w-full max-w-md mx-auto text-center space-y-5 sm:space-y-7 pb-12 sm:pb-20 px-4 relative z-20"
-                initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 1 }}
+                className="w-full max-w-md mx-auto text-center space-y-5 sm:space-y-7 px-4 relative z-20"
+                initial={{ opacity: 0, y: 40 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.35 }} transition={{ duration: 1, ease: 'easeOut' }}
               >
                 <h2 className="font-script text-4xl sm:text-5xl md:text-6xl text-[#3C3228] mb-1 sm:mb-3">RSVP</h2>
                 <p className="text-base sm:text-lg text-[#3C3228]/75 italic mb-5 sm:mb-7 font-serif">Will you be joining us?</p>
@@ -442,7 +452,7 @@ function CountdownTimer() {
   return (
     <motion.div
       className="w-full max-w-xl mx-auto text-center px-2 sm:px-4 relative z-20"
-      initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} transition={{ duration: 1 }}
+      initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.4 }} transition={{ duration: 0.9, ease: 'easeOut' }}
     >
       <div className="flex items-center justify-center gap-2 sm:gap-4 mb-6 sm:mb-8">
         <div className="h-[0.5px] bg-gradient-to-r from-transparent via-[#C9A96E]/50 to-transparent flex-1 max-w-[80px] sm:max-w-[110px]" />
