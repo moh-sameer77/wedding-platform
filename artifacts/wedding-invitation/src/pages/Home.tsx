@@ -258,7 +258,6 @@ export default function WeddingInvitation() {
           >
             <div
               className="w-full max-w-2xl lg:max-w-3xl mx-auto min-h-screen px-4 sm:px-8 py-12 md:py-24 flex flex-col items-center relative shadow-2xl bg-[#FAF7F2] shadow-black/40 border border-[#C9A96E]/25 overflow-hidden"
-              style={{ '--floral-h': 'clamp(150px, 30vw, 280px)', paddingBottom: 'calc(var(--floral-h) + 28px)' } as React.CSSProperties}
             >
 
               {/* Double border frame */}
@@ -279,14 +278,6 @@ export default function WeddingInvitation() {
                 className="absolute top-0 right-0 pointer-events-none select-none"
                 style={{ width: 'clamp(170px, 42%, 300px)', zIndex: 5, transformOrigin: 'top right' }}
                 initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 1.4, delay: 0.2 }}
-              />
-              {/* Bottom floral frame — cropped to its densest band, height reserved via padding so content never overlaps it */}
-              <motion.img
-                src="/floral-bottom.png"
-                alt=""
-                className="absolute bottom-0 left-0 right-0 w-full pointer-events-none select-none"
-                style={{ height: 'var(--floral-h)', objectFit: 'cover', objectPosition: 'bottom', zIndex: 1 } as React.CSSProperties}
-                initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 1.4, delay: 0.4 }}
               />
 
               {/* Content */}
@@ -422,6 +413,17 @@ export default function WeddingInvitation() {
                   </button>
                 </div>
               </motion.div>
+
+              {/* Bottom floral frame — full image shown in normal flow, so it always occupies its own block and never overlaps content above it */}
+              <motion.img
+                src="/floral-bottom.png"
+                alt=""
+                className="w-full mt-10 sm:mt-14 pointer-events-none select-none relative z-0"
+                initial={{ opacity: 0, y: 24 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, amount: 0.2 }}
+                transition={{ duration: 1.2, ease: 'easeOut' }}
+              />
 
             </div>
           </motion.div>
