@@ -414,11 +414,11 @@ export default function WeddingInvitation() {
                 </div>
               </motion.div>
 
-              {/* Bottom floral frame — full image shown in normal flow, so it always occupies its own block and never overlaps content above it */}
+              {/* Bottom floral frame — cropped to the dense flower band (no internal gap), full width in normal flow so it never overlaps content above it */}
               <motion.img
-                src="/floral-bottom.png"
+                src="/floral-bottom-band.png"
                 alt=""
-                className="w-full mt-10 sm:mt-14 pointer-events-none select-none relative z-0"
+                className="w-full max-w-full mt-8 sm:mt-12 pointer-events-none select-none relative z-0 block"
                 initial={{ opacity: 0, y: 24 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, amount: 0.2 }}
