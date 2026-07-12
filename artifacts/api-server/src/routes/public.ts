@@ -1,18 +1,28 @@
 import { Router, type IRouter } from "express";
 import { z } from "zod";
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import QRCode from "qrcode";
 import {
   db,
   eventsTable,
   invitationsTable,
+  checkinsTable,
   tablesTable,
   guestbookMessagesTable,
   memoryUploadsTable,
   type Event,
 } from "@workspace/db";
+import { signQrToken } from "../lib/crypto";
+import { createRateLimit } from "../middlewares/rate-limit";
 
 const router: IRouter = Router();
+router.use(
+  createRateLimit({
+    id: "public",
+    max: 120,
+    windowMs: 60_000,
+  }),
+);
 
 function publicEvent(event: Event) {
   let invitationConfig: unknown = null;
@@ -36,6 +46,8 @@ function publicEvent(event: Event) {
     thankYouMessage: event.thankYouMessage,
     guestbookPublic: event.guestbookPublic,
     tablesEnabled: event.tablesEnabled,
+    uploadsEnabled: event.uploadsEnabled,
+    maxUploadsPerGuest: event.maxUploadsPerGuest,
     invitationConfig,
   };
 }
@@ -83,7 +95,17 @@ router.get("/invite/:token", async (req, res, next) => {
         allowedCount: row.invitation.allowedCount,
         rsvpStatus: row.invitation.rsvpStatus,
         rsvpCount: row.invitation.rsvpCount,
-        tableName: row.tableName,
+        checkedIn: Number(
+          (
+            await db
+              .select({
+                total: sql<number>`coalesce(sum(${checkinsTable.count}), 0)`,
+              })
+              .from(checkinsTable)
+              .where(eq(checkinsTable.invitationId, row.invitation.id))
+          )[0]?.total ?? 0,
+        ),
+        tableName: row.event.tablesEnabled ? row.tableName : null,
       },
     });
   } catch (err) {
@@ -146,6 +168,10 @@ router.get("/table/:tableToken", async (req, res, next) => {
       .where(eq(tablesTable.token, req.params.tableToken));
     if (!row) {
       res.status(404).json({ error: "Table not found" });
+      return;
+    }
+    if (!row.event.tablesEnabled) {
+      res.status(404).json({ error: "Table functionality is disabled" });
       return;
     }
     res.json({
@@ -309,7 +335,10 @@ router.get("/qr/:kind/:token", async (req, res, next) => {
     const base =
       process.env.PUBLIC_BASE_URL ||
       `${req.protocol}://${req.get("host") ?? "localhost"}`;
-    const url = `${base}/${kind === "invite" ? "i" : "t"}/${token}`;
+    const url =
+      kind === "invite"
+        ? `${base}/i/${token}?qr=${encodeURIComponent(signQrToken("invite", token))}`
+        : `${base}/t/${token}?qr=${encodeURIComponent(signQrToken("table", token))}`;
     const png = await QRCode.toBuffer(url, {
       width: 512,
       margin: 2,

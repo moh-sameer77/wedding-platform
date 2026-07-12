@@ -13,13 +13,41 @@ import {
   setTextOverrides,
   resolveSections,
   type Lang,
-  type InvitationConfig,
+type InvitationConfig,
   type SectionId,
 } from '@/lib/i18n';
 
-const COUNTDOWN_TARGET = new Date('2026-07-25T16:00:00').getTime();
+const COUNTDOWN_TARGET = new Date('2026-07-25T19:00:00').getTime();
 
 const MAPS_URL = 'https://maps.google.com/?q=Tal+Pine+Amman+Jordan';
+
+type GuestScreen = 'invite' | 'pass' | 'memories' | 'guestbook';
+
+async function copyTextToClipboard(text: string): Promise<void> {
+  try {
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(text);
+      return;
+    }
+  } catch {
+    // Fall through to the DOM fallback for mobile browsers.
+  }
+
+  const textarea = document.createElement('textarea');
+  textarea.value = text;
+  textarea.setAttribute('readonly', '');
+  textarea.style.position = 'fixed';
+  textarea.style.top = '0';
+  textarea.style.left = '-9999px';
+  textarea.style.opacity = '0';
+  document.body.appendChild(textarea);
+  textarea.focus();
+  textarea.select();
+  textarea.setSelectionRange(0, textarea.value.length);
+  const copied = document.execCommand('copy');
+  document.body.removeChild(textarea);
+  if (!copied) throw new Error('Clipboard copy failed');
+}
 
 // --- SVG COMPONENTS ---
 
@@ -236,7 +264,7 @@ function CalendarMenu({ lang, onClose }: { lang: Lang; onClose: () => void }) {
       'BEGIN:VEVENT',
       `UID:${uid}`,
       `DTSTAMP:${now}`,
-      'DTSTART;TZID=Asia/Amman:20260725T160000',
+      'DTSTART;TZID=Asia/Amman:20260725T190000',
       'DTEND;TZID=Asia/Amman:20260725T230000',
       'SUMMARY:Mohammad & Renad Wedding',
       'DESCRIPTION:Wedding Celebration — Joyfully request your presence',
@@ -258,7 +286,7 @@ function CalendarMenu({ lang, onClose }: { lang: Lang; onClose: () => void }) {
   const googleUrl =
     'https://calendar.google.com/calendar/render?action=TEMPLATE' +
     '&text=Mohammad+%26+Renad+Wedding' +
-    '&dates=20260725T160000/20260725T230000' +
+    '&dates=20260725T190000/20260725T230000' +
     '&details=Wedding+Celebration+%E2%80%94+Joyfully+request+your+presence' +
     '&location=Tal+Pine,+Amman,+Jordan';
 
@@ -325,6 +353,7 @@ export default function WeddingInvitation() {
   const [cracking, setCracking] = useState(false);
   const [showContent, setShowContent] = useState(false);
   const [showCalendar, setShowCalendar] = useState(false);
+  const [guestScreen, setGuestScreen] = useState<GuestScreen>('invite');
   const { toast } = useToast();
   const [, params] = useRoute('/i/:token');
   const token = params?.token ?? null;
@@ -359,8 +388,11 @@ export default function WeddingInvitation() {
   const centerBg =
     backgrounds.center === null
       ? null
-      : backgrounds.center || `${import.meta.env.BASE_URL}floral-center.png`;
+      : backgrounds.center || `${import.meta.env.BASE_URL}faded-transparent-floral-background.png`;
+  const topBg = backgrounds.top;
+  const bottomBg = backgrounds.bottom;
   const tablesEnabled = event?.tablesEnabled ?? false;
+  const isConfirmed = invitation?.rsvpStatus === 'confirmed';
 
   usePageTitle(invitation ? `Invitation for ${invitation.guestName}` : undefined);
 
@@ -371,6 +403,15 @@ export default function WeddingInvitation() {
   useEffect(() => {
     if (event?.status === 'archived') navigate('/memories');
   }, [event?.status, navigate]);
+
+  useEffect(() => {
+    if (isConfirmed) {
+      setShowContent(true);
+      setGuestScreen((current) => (current === 'invite' ? 'pass' : current));
+    } else {
+      setGuestScreen('invite');
+    }
+  }, [isConfirmed]);
 
   const handleOpen = () => {
     if (cracking || isOpen) return;
@@ -403,9 +444,21 @@ export default function WeddingInvitation() {
     <div className="min-h-[100dvh] w-full bg-[#F3E4E2] overflow-hidden relative selection:bg-[#D48A96]/30 font-serif">
       <LangToggle lang={lang} />
       <div className="fixed inset-0 pointer-events-none z-0 opacity-20 mix-blend-multiply bg-[url('data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.65%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22 opacity=%220.06%22/%3E%3C/svg%3E')]" />
+      {showContent && centerBg && (
+        <motion.img
+          src={centerBg}
+          alt=""
+          aria-hidden="true"
+          className="fixed left-1/2 top-1/2 z-[11] w-[min(84vw,620px)] max-h-[78vh] -translate-x-1/2 -translate-y-1/2 object-contain pointer-events-none select-none"
+          style={{ opacity: 0.75 }}
+          initial={{ opacity: 0, scale: 0.96 }}
+          animate={{ opacity: 0.75, scale: 1 }}
+          transition={{ duration: 1.2, ease: 'easeOut' }}
+        />
+      )}
 
       <AnimatePresence>
-        {!showContent && (
+        {!showContent && !isConfirmed && (
           <motion.div
             className="absolute inset-0 flex items-center justify-center z-50 p-4 sm:p-8"
             exit={{ opacity: 0, transition: { duration: 1, delay: 0.5 } }}
@@ -587,24 +640,31 @@ export default function WeddingInvitation() {
       <AnimatePresence>
         {showContent && (
           <motion.div
-            className="w-full min-h-[100dvh] bg-[#F3E4E2] z-10 relative flex flex-col items-center pt-8 sm:pt-16 pb-16"
+            className="w-full min-h-[100dvh] z-10 relative flex flex-col items-center pt-8 sm:pt-16 pb-24"
             initial={{ opacity: 0, y: 50 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 1.5, ease: 'easeOut' }}
           >
+            {guestScreen === 'invite' && (
             <div
+              id="invite-card"
               className="w-full max-w-2xl lg:max-w-3xl mx-auto min-h-screen pb-0 flex flex-col items-center relative shadow-2xl bg-[#F9F3F3] shadow-black/40 border border-[#D48A96]/25 overflow-hidden"
             >
-
               {/* Watercolor garland draping from the top of the card */}
-              <motion.div
-                className="w-full pointer-events-none select-none"
-                initial={{ opacity: 0, y: -18 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 1.6, ease: 'easeOut' }}
-              >
-                <Garland className="w-full" />
-              </motion.div>
+              {topBg !== null && (
+                <motion.div
+                  className="w-full pointer-events-none select-none relative z-20"
+                  initial={{ opacity: 0, y: -18 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 1.6, ease: 'easeOut' }}
+                >
+                  {topBg ? (
+                    <img src={topBg} alt="" className="w-full block" />
+                  ) : (
+                    <Garland className="w-full" />
+                  )}
+                </motion.div>
+              )}
 
               {/* Ambient falling petals drifting gently down the card */}
               <FallingPetals count={12} />
@@ -612,7 +672,7 @@ export default function WeddingInvitation() {
               {/* Content — type scale: display 5xl-7xl · heading 3xl-4xl ·
                   subheading xl-2xl · body sm-base · label [10px]-xs */}
               <div
-                className="w-full flex-grow flex flex-col items-center justify-center relative z-20 space-y-8 sm:space-y-10 pb-10 sm:pb-14 px-8 sm:px-12 -mt-6 sm:-mt-10"
+                className="w-full flex-grow flex flex-col items-center justify-center relative z-20 space-y-8 sm:space-y-10 pb-6 sm:pb-8 px-8 sm:px-12 -mt-6 sm:-mt-10"
                 dir={rtl ? 'rtl' : 'ltr'}
               >
                 {/* Sections render in the order (and visibility) configured
@@ -803,9 +863,14 @@ export default function WeddingInvitation() {
 
                       case 'rsvp':
                         return (
-                          <div key="rsvp" className="w-full">
+                          <div key="rsvp" id="rsvp-section" className="w-full">
                             <DividerSVG />
-                            <RsvpSection token={token} invitation={invitation} lang={lang} />
+                            <RsvpSection
+                              token={token}
+                              invitation={invitation}
+                              lang={lang}
+                              onConfirmed={() => setGuestScreen('pass')}
+                            />
                             {/* Table finder (FR-020): only when tables are enabled */}
                             {tablesEnabled && invitation?.tableName && (
                               <motion.div
@@ -840,21 +905,437 @@ export default function WeddingInvitation() {
               </div>
 
               {/* Watercolor garland mirrored along the bottom edge */}
-              <motion.div
-                className="w-full max-w-full mt-6 sm:mt-10 pointer-events-none select-none relative z-0"
-                initial={{ opacity: 0, y: 28 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, amount: 0.15 }}
-                transition={{ duration: 1.4, ease: 'easeOut' }}
-              >
-                <Garland flip className="w-full" />
-              </motion.div>
+              {bottomBg !== null && (
+                <motion.div
+                  className="w-full max-w-full -mt-1 sm:-mt-2 pointer-events-none select-none relative z-20"
+                  initial={{ opacity: 0, y: 28 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, amount: 0.15 }}
+                  transition={{ duration: 1.4, ease: 'easeOut' }}
+                >
+                  {bottomBg ? (
+                    <img src={bottomBg} alt="" className="w-full block" />
+                  ) : (
+                    <Garland flip className="w-full" />
+                  )}
+                </motion.div>
+              )}
 
             </div>
+            )}
+            {guestScreen !== 'invite' && token && invitation && (
+              <GuestScreenShell
+                token={token}
+                invitation={invitation}
+                lang={lang}
+                screen={guestScreen}
+                uploadsEnabled={event?.uploadsEnabled ?? true}
+                maxUploadsPerGuest={event?.maxUploadsPerGuest ?? 5}
+              />
+            )}
           </motion.div>
         )}
       </AnimatePresence>
+      {showContent && token && invitation && isConfirmed && (
+        <GuestBottomNav
+          active={guestScreen}
+          onSelect={setGuestScreen}
+          lang={lang}
+        />
+      )}
     </div>
+  );
+}
+
+function GuestBottomNav({
+  active,
+  onSelect,
+  lang,
+}: {
+  active: GuestScreen;
+  onSelect: (screen: GuestScreen) => void;
+  lang: Lang;
+}) {
+  const items: { id: GuestScreen; label: string; icon: string }[] = [
+    { id: 'invite', label: lang === 'ar' ? 'الدعوة' : 'Invite', icon: 'M' },
+    { id: 'pass', label: lang === 'ar' ? 'الدخول' : 'Pass', icon: 'P' },
+    { id: 'memories', label: lang === 'ar' ? 'الذكريات' : 'Memories', icon: '✥' },
+    { id: 'guestbook', label: lang === 'ar' ? 'التهاني' : 'Guestbook', icon: 'G' },
+  ];
+
+  return (
+    <nav
+      className="fixed inset-x-0 bottom-0 z-[70] px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pointer-events-none"
+      dir={isRtl(lang) ? 'rtl' : 'ltr'}
+    >
+      <div className="mx-auto flex max-w-md items-center justify-around rounded-[2rem] border border-white/55 bg-[#FDF9F8]/58 px-2 py-2 shadow-[0_18px_50px_rgba(69,56,60,0.22)] backdrop-blur-2xl pointer-events-auto ring-1 ring-[#D48A96]/20">
+        {items.map((item) => {
+          const selected = active === item.id;
+          return (
+            <button
+              key={item.id}
+              onClick={() => onSelect(item.id)}
+              className={`group relative flex min-w-0 flex-1 flex-col items-center gap-1 rounded-[1.5rem] px-2 py-2 transition-all ${
+                selected ? 'text-[#8F4557]' : 'text-[#8F7A67]/75 hover:text-[#8F4557]'
+              }`}
+            >
+              <span className={`flex h-9 w-9 items-center justify-center rounded-full border text-xs font-semibold transition-all ${
+                selected
+                  ? 'border-white/70 bg-white/70 text-[#8F4557] shadow-[0_8px_24px_rgba(178,90,108,0.22)] scale-105'
+                  : 'border-white/45 bg-white/35 group-hover:bg-white/55'
+              }`}>
+                {item.icon}
+              </span>
+              <span className="truncate text-[9px] uppercase tracking-[0.12em]">
+                {item.label}
+              </span>
+              {selected && (
+                <motion.span
+                  layoutId="guest-nav-active"
+                  className="absolute inset-0 -z-10 rounded-[1.5rem] bg-[#D48A96]/12"
+                  transition={{ duration: 0.25, ease: 'easeOut' }}
+                />
+              )}
+            </button>
+          );
+        })}
+      </div>
+    </nav>
+  );
+}
+
+function GuestScreenShell({
+  token,
+  invitation,
+  lang,
+  screen,
+  uploadsEnabled,
+  maxUploadsPerGuest,
+}: {
+  token: string;
+  invitation: InviteDetails['invitation'];
+  lang: Lang;
+  screen: GuestScreen;
+  uploadsEnabled: boolean;
+  maxUploadsPerGuest: number;
+}) {
+  const renderScreen = () => {
+    switch (screen) {
+      case 'pass':
+        return <GuestPassSection token={token} invitation={invitation} lang={lang} />;
+      case 'memories':
+        return (
+          <GuestMemorySection
+            token={token}
+            invitation={invitation}
+            lang={lang}
+            uploadsEnabled={uploadsEnabled}
+            maxUploadsPerGuest={maxUploadsPerGuest}
+          />
+        );
+      case 'guestbook':
+        return <GuestbookSection token={token} invitation={invitation} lang={lang} />;
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <div
+      className="w-full max-w-2xl lg:max-w-3xl mx-auto min-h-[calc(100dvh-8rem)] flex flex-col items-center relative shadow-2xl bg-[#F9F3F3] shadow-black/40 border border-[#D48A96]/25 overflow-hidden px-8 sm:px-12 py-10 sm:py-14"
+      dir={isRtl(lang) ? 'rtl' : 'ltr'}
+    >
+      <div className="absolute inset-3 border-[0.5px] border-[#D48A96]/25 pointer-events-none" />
+      <FallingPetals count={8} />
+      <div className="relative z-20 w-full flex-1 flex items-center justify-center">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={screen}
+            className="w-full"
+            initial={{ opacity: 0, y: 20, filter: 'blur(4px)' }}
+            animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+            exit={{ opacity: 0, y: -16, filter: 'blur(4px)' }}
+            transition={{ duration: 0.35, ease: 'easeOut' }}
+          >
+            {renderScreen()}
+          </motion.div>
+        </AnimatePresence>
+      </div>
+    </div>
+  );
+}
+
+function GuestPassSection({
+  token,
+  invitation,
+  lang,
+}: {
+  token: string;
+  invitation: InviteDetails['invitation'];
+  lang: Lang;
+}) {
+  const checkedInCount = invitation.checkedIn ?? 0;
+  return (
+    <section className="mx-auto max-w-md text-center">
+      <p className="text-[10px] uppercase tracking-[0.28em] text-[#D48A96]">
+        {lang === 'ar' ? 'بطاقة الدخول' : 'Entrance pass'}
+      </p>
+      <h2 className="font-script text-4xl text-[#45383C] mt-2">
+        {invitation.guestName}
+      </h2>
+      <div className="relative mx-auto mt-6 inline-block bg-[#FDF9F8] p-4 border border-[#D48A96]/45 shadow-lg">
+        <div className="absolute inset-1 border border-dashed border-[#D48A96]/20 pointer-events-none" />
+        <img
+          src={`/api/qr/invite/${token}`}
+          alt={lang === 'ar' ? 'رمز الدخول' : 'Entrance QR code'}
+          className="relative h-48 w-48"
+        />
+      </div>
+      <p className="mx-auto mt-4 max-w-sm text-sm text-[#45383C]/70 italic">
+        {lang === 'ar'
+          ? 'اعرضوا هذا الرمز عند المدخل لتسجيل حضوركم.'
+          : 'Show this QR at the entrance so the guard can check you in.'}
+      </p>
+      <p className="mt-2 text-[10px] uppercase tracking-[0.22em] text-[#45383C]/50">
+        {lang === 'ar' ? `عدد الحضور المؤكد: ${invitation.rsvpCount ?? invitation.allowedCount}` : `${invitation.rsvpCount ?? invitation.allowedCount} confirmed guest(s)`}
+      </p>
+      {checkedInCount > 0 && (
+        <div className="mt-5 rounded-[1.5rem] border border-emerald-200 bg-emerald-50/80 px-5 py-4 text-emerald-900 shadow-sm text-center">
+          <p className="text-[10px] uppercase tracking-[0.22em] font-semibold">
+            {lang === 'ar' ? 'أهلاً وسهلاً' : 'Welcome'}
+          </p>
+          <p className="mt-2 text-sm leading-relaxed">
+            {lang === 'ar'
+              ? 'تم تسجيل حضوركم بنجاح. نتمنى لكم أمسية جميلة وممتعة معنا.'
+              : 'Your check-in is complete. We are glad to welcome you to the celebration.'}
+          </p>
+          <p className="mt-2 text-xs opacity-80">
+            {lang === 'ar'
+              ? `عدد المسجلين حتى الآن: ${checkedInCount}`
+              : `Checked in count: ${checkedInCount}`}
+          </p>
+        </div>
+      )}
+    </section>
+  );
+}
+
+function GuestMemorySection({
+  token,
+  invitation,
+  lang,
+  uploadsEnabled,
+  maxUploadsPerGuest,
+}: {
+  token: string;
+  invitation: InviteDetails['invitation'];
+  lang: Lang;
+  uploadsEnabled: boolean;
+  maxUploadsPerGuest: number;
+}) {
+  const { toast } = useToast();
+  const [file, setFile] = useState<File | null>(null);
+  const [name, setName] = useState(invitation.guestName);
+  const [caption, setCaption] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [sent, setSent] = useState(false);
+
+  const submit = async () => {
+    if (!file) return;
+    setBusy(true);
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      fd.append('inviteToken', token);
+      if (name.trim()) fd.append('uploadedByName', name.trim());
+      if (caption.trim()) fd.append('caption', caption.trim());
+      const res = await fetch('/api/uploads', { method: 'POST', body: fd });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'Upload failed');
+      setSent(true);
+      setFile(null);
+      setCaption('');
+      toast({ title: lang === 'ar' ? 'تم إرسال الذكرى' : 'Memory sent', duration: 3000 });
+    } catch (e) {
+      toast({ title: lang === 'ar' ? 'تعذر الإرسال' : 'Upload failed', description: e instanceof Error ? e.message : '' });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  if (!uploadsEnabled) {
+    return (
+      <section className="mx-auto max-w-md">
+        <div className="text-center mb-5">
+          <p className="text-[10px] uppercase tracking-[0.28em] text-[#D48A96]">
+            {lang === 'ar' ? 'شاركوا اللحظة' : 'Share the moment'}
+          </p>
+          <h2 className="font-script text-4xl text-[#45383C] mt-2">
+            {lang === 'ar' ? 'الذكريات' : 'Memories'}
+          </h2>
+        </div>
+        <div className="rounded-[1.5rem] border border-[#D48A96]/25 bg-[#FDF9F8]/90 px-5 py-8 text-center shadow-sm">
+          <p className="text-[10px] uppercase tracking-[0.22em] text-[#B25A6C]">
+            {lang === 'ar' ? 'الرفع متوقف حالياً' : 'Uploads are locked'}
+          </p>
+          <p className="mt-3 text-sm text-[#45383C]/75 leading-relaxed">
+            {lang === 'ar'
+              ? 'هذا القسم متوقف مؤقتاً من لوحة الإدارة. ما زال بإمكانكم إرسال التهاني من سجل التهاني.'
+              : 'This section is temporarily locked from the admin panel. You can still send wishes through the guestbook.'}
+          </p>
+          <p className="mt-3 text-xs uppercase tracking-[0.18em] text-[#45383C]/45">
+            {lang === 'ar'
+              ? `الحد الحالي لكل ضيف: ${maxUploadsPerGuest}`
+              : `Current limit per guest: ${maxUploadsPerGuest}`}
+          </p>
+        </div>
+      </section>
+    );
+  }
+
+  return (
+    <section className="mx-auto max-w-md">
+      <div className="text-center mb-5">
+        <p className="text-[10px] uppercase tracking-[0.28em] text-[#D48A96]">
+          {lang === 'ar' ? 'شاركوا اللحظة' : 'Share the moment'}
+        </p>
+        <h2 className="font-script text-4xl text-[#45383C] mt-2">
+          {lang === 'ar' ? 'الذكريات' : 'Memories'}
+        </h2>
+        <p className="mt-3 text-sm text-[#45383C]/70 italic">
+          {lang === 'ar'
+            ? 'ارفعوا صورة أو فيديو قصير من هنا ليظهر مباشرة في شاشة الذكريات الحية.'
+            : 'Upload a photo or short video here to show it on the live wall.'}
+        </p>
+        <p className="mt-2 text-[10px] uppercase tracking-[0.18em] text-[#45383C]/45">
+          {lang === 'ar'
+            ? `يمكن لكل ضيف إرسال حتى ${maxUploadsPerGuest} عناصر`
+            : `Each guest can send up to ${maxUploadsPerGuest} items`}
+        </p>
+      </div>
+      <div className="border border-[#D48A96]/35 bg-[#FDF9F8]/85 p-5 shadow-sm space-y-3">
+        {sent && (
+          <p className="text-sm text-emerald-700 text-center">
+            {lang === 'ar' ? 'شكراً لكم، تمت مشاركة الذكرى مع شاشة الذكريات الحية.' : 'Thank you. Your memory was shared to the live wall.'}
+          </p>
+        )}
+        <label className="block cursor-pointer rounded-sm border-2 border-dashed border-[#D48A96]/45 bg-white/70 px-4 py-5 text-center hover:bg-[#D48A96]/5 transition-colors">
+          <span className="block text-[10px] uppercase tracking-[0.22em] text-[#B25A6C]">
+            {lang === 'ar' ? 'رفع للعرض على الشاشة' : 'Upload for live wall'}
+          </span>
+          <span className="mt-2 block text-sm text-[#45383C]">
+            {file
+              ? file.name
+              : lang === 'ar'
+                ? 'اختاروا صورة أو فيديو قصير'
+                : 'Choose a photo or short video'}
+          </span>
+          <span className="mt-1 block text-xs text-[#45383C]/55">
+            {lang === 'ar'
+              ? 'الملفات المدعومة: صور أو فيديو قصير'
+              : 'Supported: images or short video clips'}
+          </span>
+          <input
+            type="file"
+            accept="image/*,video/mp4,video/quicktime,video/webm"
+            onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+            className="hidden"
+          />
+        </label>
+        <input
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder={lang === 'ar' ? 'الاسم' : 'Name'}
+          className="w-full px-3 py-2.5 border border-[#D48A96]/30 bg-white/80 text-sm focus:outline-none focus:border-[#B25A6C]"
+        />
+        <input
+          value={caption}
+          onChange={(e) => setCaption(e.target.value)}
+          placeholder={lang === 'ar' ? 'تعليق قصير اختياري' : 'Optional short caption'}
+          className="w-full px-3 py-2.5 border border-[#D48A96]/30 bg-white/80 text-sm focus:outline-none focus:border-[#B25A6C]"
+        />
+        <button
+          disabled={!file || busy}
+          onClick={submit}
+          className="w-full py-3.5 bg-gradient-to-br from-[#D48A96] to-[#B25A6C] text-[#F9F3F3] uppercase tracking-widest text-xs font-semibold disabled:opacity-50"
+        >
+          {busy ? (lang === 'ar' ? 'جارٍ الإرسال...' : 'Sending...') : (lang === 'ar' ? 'إرسال ذكرى' : 'Send memory')}
+        </button>
+      </div>
+    </section>
+  );
+}
+
+function GuestbookSection({
+  token,
+  invitation,
+  lang,
+}: {
+  token: string;
+  invitation: InviteDetails['invitation'];
+  lang: Lang;
+}) {
+  const { toast } = useToast();
+  const [name, setName] = useState(invitation.guestName);
+  const [text, setText] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  const submit = async () => {
+    if (!text.trim()) return;
+    setBusy(true);
+    try {
+      await api.post('/guestbook', {
+        guestName: name.trim() || undefined,
+        text: text.trim(),
+        inviteToken: token,
+      });
+      setText('');
+      toast({ title: lang === 'ar' ? 'تم حفظ التهنئة' : 'Wish saved', duration: 3000 });
+    } catch (e) {
+      toast({ title: lang === 'ar' ? 'تعذر الإرسال' : 'Could not send', description: e instanceof Error ? e.message : '' });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <section className="mx-auto max-w-md">
+      <div className="text-center mb-5">
+        <p className="text-[10px] uppercase tracking-[0.28em] text-[#D48A96]">
+          {lang === 'ar' ? 'كلمة للعروسين' : 'A wish for the couple'}
+        </p>
+        <h2 className="font-script text-4xl text-[#45383C] mt-2">
+          {lang === 'ar' ? 'سجل التهاني' : 'Guestbook'}
+        </h2>
+        <p className="mt-3 text-sm text-[#45383C]/70 italic">
+          {lang === 'ar'
+            ? 'اكتبوا تهنئتكم هنا لتظهر ضمن شاشة الذكريات الحية.'
+            : 'Write your wish here to have it shown on the live wall.'}
+        </p>
+      </div>
+      <div className="border border-[#D48A96]/35 bg-[#FDF9F8]/85 p-5 shadow-sm space-y-3">
+        <textarea
+          rows={5}
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          placeholder={lang === 'ar' ? 'اكتبوا تهنئتكم هنا...' : 'Write your wish here...'}
+          className="w-full px-3 py-2.5 border border-[#D48A96]/30 bg-white/80 text-sm focus:outline-none focus:border-[#B25A6C]"
+        />
+        <input
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder={lang === 'ar' ? 'الاسم' : 'Name'}
+          className="w-full px-3 py-2.5 border border-[#D48A96]/30 bg-white/80 text-sm focus:outline-none focus:border-[#B25A6C]"
+        />
+        <button
+          disabled={!text.trim() || busy}
+          onClick={submit}
+          className="w-full py-3.5 bg-gradient-to-br from-[#D48A96] to-[#B25A6C] text-[#F9F3F3] uppercase tracking-widest text-xs font-semibold disabled:opacity-50"
+        >
+          {busy ? (lang === 'ar' ? 'جارٍ الإرسال...' : 'Sending...') : (lang === 'ar' ? 'إرسال التهنئة' : 'Send wish')}
+        </button>
+      </div>
+    </section>
   );
 }
 
@@ -862,10 +1343,12 @@ function RsvpSection({
   token,
   invitation,
   lang,
+  onConfirmed,
 }: {
   token: string | null;
   invitation: InviteDetails['invitation'] | null;
   lang: Lang;
+  onConfirmed?: () => void;
 }) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -885,6 +1368,7 @@ function RsvpSection({
       if (payload.status === 'confirmed') {
         setCelebrating(true);
         setTimeout(() => setCelebrating(false), 2200);
+        onConfirmed?.();
       }
       toast({
         title:
@@ -1070,7 +1554,7 @@ function NuqootSection({ lang }: { lang: Lang }) {
 
   const copyAlias = async () => {
     try {
-      await navigator.clipboard.writeText(CLIQ_ALIAS);
+      await copyTextToClipboard(CLIQ_ALIAS);
       setCopied(true);
       setTimeout(() => setCopied(false), 2500);
       toast({

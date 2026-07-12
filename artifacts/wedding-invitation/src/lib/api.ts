@@ -19,6 +19,8 @@ export interface PublicEvent {
   thankYouMessage: string | null;
   guestbookPublic: boolean;
   tablesEnabled: boolean;
+  uploadsEnabled: boolean;
+  maxUploadsPerGuest: number;
   invitationConfig: unknown;
 }
 
@@ -29,6 +31,7 @@ export interface InviteDetails {
     allowedCount: number;
     rsvpStatus: 'pending' | 'confirmed' | 'declined';
     rsvpCount: number | null;
+    checkedIn: number;
     tableName: string | null;
   };
 }

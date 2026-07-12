@@ -99,6 +99,8 @@ const eventPatchSchema = z.object({
   autoApprove: z.boolean().optional(),
   guestbookPublic: z.boolean().optional(),
   tablesEnabled: z.boolean().optional(),
+  uploadsEnabled: z.boolean().optional(),
+  maxUploadsPerGuest: z.number().int().min(1).max(20).optional(),
   welcomeMessage: z.string().max(1000).nullable().optional(),
   thankYouMessage: z.string().max(1000).nullable().optional(),
   venueMapUrl: z.string().max(500).nullable().optional(),
@@ -135,6 +137,12 @@ router.patch("/admin/event", requireAuth("admin"), async (req, res, next) => {
       .set(patch)
       .where(eq(eventsTable.id, event.id))
       .returning();
+    if (parsed.data.tablesEnabled === false) {
+      await db
+        .update(invitationsTable)
+        .set({ tableId: null })
+        .where(eq(invitationsTable.eventId, event.id));
+    }
     res.json({ event: updated });
   } catch (err) {
     next(err);
@@ -198,7 +206,7 @@ router.post(
           guestName: parsed.data.guestName,
           phone: parsed.data.phone ?? null,
           allowedCount: parsed.data.allowedCount,
-          tableId: parsed.data.tableId ?? null,
+          tableId: event.tablesEnabled ? (parsed.data.tableId ?? null) : null,
           token: generateToken(),
         })
         .returning();
@@ -248,7 +256,7 @@ router.post(
             guestName: row.guestName,
             phone: row.phone ?? null,
             allowedCount: row.allowedCount,
-            tableId: row.tableName
+            tableId: event.tablesEnabled && row.tableName
               ? (byName.get(row.tableName.trim().toLowerCase()) ?? null)
               : null,
             token: generateToken(),
@@ -282,9 +290,14 @@ router.patch(
         res.status(400).json({ error: "Invalid update" });
         return;
       }
+      const event = await currentEvent();
+      const patch = { ...parsed.data };
+      if (patch.tableId !== undefined && !event?.tablesEnabled) {
+        patch.tableId = null;
+      }
       const [updated] = await db
         .update(invitationsTable)
-        .set(parsed.data)
+        .set(patch)
         .where(eq(invitationsTable.id, id))
         .returning();
       if (!updated) {

@@ -43,11 +43,11 @@ const STRINGS = {
   // Date & venue
   dateLine: { en: 'Saturday · July 25 · 2026', ar: 'السبت · ٢٥ تموز · ٢٠٢٦' },
   venueName: { en: 'Tal Pine', ar: 'تل الصنوبر' },
-  venueTime: { en: 'At seven o’clock in the evening', ar: 'في تمام السابعة مساءً' },
+  venueTime: { en: 'At 7:00 in the evening', ar: 'في تمام الساعة السابعة مساءً' },
   formalAttire: { en: 'Formal attire requested', ar: 'يرجى الالتزام باللباس الرسمي' },
   noChildren: {
-    en: 'With all our love for your little ones, the venue welcomes adults only this evening.',
-    ar: 'مع كامل محبتنا لصغاركم، يقتصر الحضور هذا المساء على الكبار وفقاً لأنظمة المكان',
+    en: 'With love for your little ones, and in line with the restaurant policy, this evening will be an adults-only celebration.',
+    ar: 'مع محبتنا الكبيرة لصغاركم، ووفقاً لسياسة المطعم، ستكون هذه الأمسية للكبار فقط.',
   },
   getDirections: { en: 'Get directions', ar: 'الموقع على الخريطة' },
   addToCalendar: { en: 'Add to calendar', ar: 'أضيفوا الموعد للتقويم' },

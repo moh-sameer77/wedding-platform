@@ -1,6 +1,7 @@
 import {
   pgTable,
   serial,
+  integer,
   text,
   timestamp,
   boolean,
@@ -24,6 +25,8 @@ export const eventsTable = pgTable("events", {
   autoApprove: boolean("auto_approve").notNull().default(false),
   guestbookPublic: boolean("guestbook_public").notNull().default(false),
   tablesEnabled: boolean("tables_enabled").notNull().default(false),
+  uploadsEnabled: boolean("uploads_enabled").notNull().default(true),
+  maxUploadsPerGuest: integer("max_uploads_per_guest").notNull().default(5),
   // Couple-editable invitation layout/copy/backgrounds (JSON string):
   // { sections: [{id, enabled}], texts: {key: {en, ar}}, backgrounds: {...} }
   invitationConfig: text("invitation_config"),

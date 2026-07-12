@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+﻿import { useRef, useState } from 'react';
 import { useRoute } from 'wouter';
 import { useQuery } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -78,7 +78,7 @@ export default function TableMoments() {
   if (query.isError) {
     return (
       <Shell>
-        <p className="font-script text-5xl text-[#D48A96] mb-4">Oh no…</p>
+        <p className="font-script text-5xl text-[#D48A96] mb-4">Oh noâ€¦</p>
         <p className="text-[#45383C]/75">
           This table link is not valid. Please scan the QR card on your table
           again.
@@ -106,7 +106,7 @@ export default function TableMoments() {
             <div className="h-[0.5px] w-12 bg-[#D48A96]/60" />
           </div>
           <p className="text-sm italic text-[#45383C]/65 mt-3 px-6">
-            Share this moment with us — your photos and wishes become part of
+            Share this moment with us â€” your photos and wishes become part of
             our story.
           </p>
         </header>
@@ -121,13 +121,23 @@ export default function TableMoments() {
           >
             {panel === 'menu' && <Menu onSelect={setPanel} />}
             {panel === 'photo' && (
-              <PhotoPanel tableToken={tableToken} onBack={() => setPanel('menu')} />
+              <PhotoPanel
+                tableToken={tableToken}
+                uploadsEnabled={event?.uploadsEnabled ?? true}
+                maxUploadsPerGuest={event?.maxUploadsPerGuest ?? 5}
+                onBack={() => setPanel('menu')}
+              />
             )}
             {panel === 'message' && (
               <MessagePanel tableToken={tableToken} onBack={() => setPanel('menu')} />
             )}
             {panel === 'voice' && (
-              <VoicePanel tableToken={tableToken} onBack={() => setPanel('menu')} />
+              <VoicePanel
+                tableToken={tableToken}
+                uploadsEnabled={event?.uploadsEnabled ?? true}
+                maxUploadsPerGuest={event?.maxUploadsPerGuest ?? 5}
+                onBack={() => setPanel('menu')}
+              />
             )}
             {panel === 'program' && (
               <ProgramPanel event={event ?? null} onBack={() => setPanel('menu')} />
@@ -165,7 +175,7 @@ function BackButton({ onBack }: { onBack: () => void }) {
       onClick={onBack}
       className="mt-4 w-full py-2.5 text-[10px] uppercase tracking-[0.2em] text-[#45383C]/55 border border-[#D48A96]/30 hover:bg-[#D48A96]/8"
     >
-      ← Back
+      â†گ Back
     </button>
   );
 }
@@ -175,7 +185,7 @@ function Menu({ onSelect }: { onSelect: (p: Panel) => void }) {
     { id: 'photo', title: 'Upload a memory', hint: 'Share a photo or short video' },
     { id: 'message', title: 'Leave a message', hint: 'Write a wish for the couple' },
     { id: 'voice', title: 'Record a voice note', hint: 'Say it in your own voice' },
-    { id: 'program', title: 'View program', hint: 'Tonight’s schedule' },
+    { id: 'program', title: 'View program', hint: 'Tonightâ€™s schedule' },
   ];
   return (
     <div className="space-y-3">
@@ -194,7 +204,7 @@ function Menu({ onSelect }: { onSelect: (p: Panel) => void }) {
             <span className="block text-sm font-medium tracking-wide">{item.title}</span>
             <span className="block text-xs text-[#45383C]/55">{item.hint}</span>
           </span>
-          <span className="ml-auto text-[#D48A96] transition-transform group-hover:translate-x-1">→</span>
+          <span className="ml-auto text-[#D48A96] transition-transform group-hover:translate-x-1">â†’</span>
         </motion.button>
       ))}
     </div>
@@ -213,7 +223,17 @@ function SuccessCard({ onBack, message }: { onBack: () => void; message: string 
   );
 }
 
-function PhotoPanel({ tableToken, onBack }: { tableToken: string; onBack: () => void }) {
+function PhotoPanel({
+  tableToken,
+  uploadsEnabled,
+  maxUploadsPerGuest,
+  onBack,
+}: {
+  tableToken: string;
+  uploadsEnabled: boolean;
+  maxUploadsPerGuest: number;
+  onBack: () => void;
+}) {
   const { toast } = useToast();
   const fileRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
@@ -226,169 +246,33 @@ function PhotoPanel({ tableToken, onBack }: { tableToken: string; onBack: () => 
     return (
       <SuccessCard
         onBack={onBack}
-        message="Your memory has been sent — it will appear on the wall once approved."
+        message="Your memory has been shared to the live wall. / طھظ…طھ ظ…ط´ط§ط±ظƒط© ط§ظ„ط°ظƒط±ظ‰ ط¹ظ„ظ‰ ط´ط§ط´ط© ط§ظ„ط°ظƒط±ظٹط§طھ ط§ظ„ط­ظٹط©."
       />
     );
 
-  const submit = async () => {
-    if (!file) return;
-    setBusy(true);
-    try {
-      const fd = new FormData();
-      fd.append('file', file);
-      fd.append('tableToken', tableToken);
-      if (name.trim()) fd.append('uploadedByName', name.trim());
-      if (caption.trim()) fd.append('caption', caption.trim());
-      const token = getSessionToken();
-      const res = await fetch('/api/uploads', {
-        method: 'POST',
-        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-        body: fd,
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Upload failed');
-      setDone(true);
-    } catch (e) {
-      toast({ title: 'Upload failed', description: e instanceof Error ? e.message : '' });
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  return (
-    <Card>
-      <p className="text-center text-sm uppercase tracking-[0.2em] text-[#45383C]/60 mb-4">
-        Upload a memory
-      </p>
-      <button
-        onClick={() => fileRef.current?.click()}
-        className="w-full border-2 border-dashed border-[#D48A96]/50 py-8 text-center hover:bg-[#D48A96]/5"
-      >
-        {file ? (
-          <span className="text-sm text-[#45383C]">{file.name}</span>
-        ) : (
-          <>
-            <span className="block text-3xl mb-1">📷</span>
-            <span className="text-xs text-[#45383C]/60">
-              Tap to choose a photo or short video
-            </span>
-          </>
-        )}
-      </button>
-      <input
-        ref={fileRef}
-        type="file"
-        accept="image/*,video/mp4,video/quicktime,video/webm"
-        className="hidden"
-        onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-      />
-      <input
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-        placeholder="Your name (optional)"
-        className="w-full mt-3 px-3 py-2.5 border border-[#D48A96]/40 bg-white/70 text-sm focus:outline-none focus:border-[#B25A6C]"
-      />
-      <input
-        value={caption}
-        onChange={(e) => setCaption(e.target.value)}
-        placeholder="A short caption (optional)"
-        className="w-full mt-2 px-3 py-2.5 border border-[#D48A96]/40 bg-white/70 text-sm focus:outline-none focus:border-[#B25A6C]"
-      />
-      <button
-        disabled={!file || busy}
-        onClick={submit}
-        className="w-full mt-4 py-3.5 bg-gradient-to-br from-[#D48A96] to-[#B25A6C] text-[#F9F3F3] uppercase tracking-widest text-xs font-semibold disabled:opacity-50"
-      >
-        {busy ? 'Sending…' : 'Share memory'}
-      </button>
-      <BackButton onBack={onBack} />
-    </Card>
-  );
-}
-
-function MessagePanel({ tableToken, onBack }: { tableToken: string; onBack: () => void }) {
-  const { toast } = useToast();
-  const [name, setName] = useState('');
-  const [text, setText] = useState('');
-  const [busy, setBusy] = useState(false);
-  const [done, setDone] = useState(false);
-
-  if (done)
+  if (!uploadsEnabled) {
     return (
-      <SuccessCard
-        onBack={onBack}
-        message="Your wish has been saved for the couple's guestbook."
-      />
+      <Card>
+        <p className="text-center text-sm uppercase tracking-[0.2em] text-[#45383C]/60 mb-4">
+          Upload a memory
+        </p>
+        <div className="rounded-[1.5rem] border border-[#D48A96]/25 bg-white/75 px-5 py-7 text-center">
+          <p className="text-[10px] uppercase tracking-[0.22em] text-[#B25A6C]">
+            Uploads are locked / الرفع متوقف حالياً
+          </p>
+          <p className="mt-3 text-sm text-[#45383C]/75 leading-relaxed">
+            The couple has temporarily disabled guest uploads. You can still leave a message.
+            <br />
+            تم إيقاف رفع الضيوف مؤقتاً من لوحة الإدارة. ما زال بإمكانكم إرسال رسالة تهنئة.
+          </p>
+          <p className="mt-2 text-xs uppercase tracking-[0.18em] text-[#45383C]/45">
+            Current limit per guest: {maxUploadsPerGuest} / الحد لكل ضيف: {maxUploadsPerGuest}
+          </p>
+        </div>
+        <BackButton onBack={onBack} />
+      </Card>
     );
-
-  const submit = async () => {
-    if (!text.trim()) return;
-    setBusy(true);
-    try {
-      await api.post('/guestbook', {
-        guestName: name.trim() || undefined,
-        text: text.trim(),
-        tableToken,
-      });
-      setDone(true);
-    } catch (e) {
-      toast({ title: 'Could not send', description: e instanceof Error ? e.message : '' });
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  return (
-    <Card>
-      <p className="text-center text-sm uppercase tracking-[0.2em] text-[#45383C]/60 mb-4">
-        Leave a message
-      </p>
-      <textarea
-        rows={5}
-        value={text}
-        onChange={(e) => setText(e.target.value)}
-        placeholder="Write your wish for Mohammad & Renad…"
-        className="w-full px-3 py-2.5 border border-[#D48A96]/40 bg-white/70 text-sm focus:outline-none focus:border-[#B25A6C]"
-      />
-      <input
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-        placeholder="Your name (optional)"
-        className="w-full mt-2 px-3 py-2.5 border border-[#D48A96]/40 bg-white/70 text-sm focus:outline-none focus:border-[#B25A6C]"
-      />
-      <button
-        disabled={!text.trim() || busy}
-        onClick={submit}
-        className="w-full mt-4 py-3.5 bg-gradient-to-br from-[#D48A96] to-[#B25A6C] text-[#F9F3F3] uppercase tracking-widest text-xs font-semibold disabled:opacity-50"
-      >
-        {busy ? 'Sending…' : 'Send wish'}
-      </button>
-      <BackButton onBack={onBack} />
-    </Card>
-  );
-}
-
-function VoicePanel({ tableToken, onBack }: { tableToken: string; onBack: () => void }) {
-  const { toast } = useToast();
-  const [recording, setRecording] = useState(false);
-  const [blob, setBlob] = useState<Blob | null>(null);
-  const [seconds, setSeconds] = useState(0);
-  const [name, setName] = useState('');
-  const [busy, setBusy] = useState(false);
-  const [done, setDone] = useState(false);
-  const recorderRef = useRef<MediaRecorder | null>(null);
-  const chunksRef = useRef<Blob[]>([]);
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  const MAX_SECONDS = 60;
-
-  if (done)
-    return (
-      <SuccessCard
-        onBack={onBack}
-        message="Your voice note has been saved — the couple will treasure it."
-      />
-    );
+  }
 
   const start = async () => {
     try {
@@ -453,6 +337,11 @@ function VoicePanel({ tableToken, onBack }: { tableToken: string; onBack: () => 
       <p className="text-center text-sm uppercase tracking-[0.2em] text-[#45383C]/60 mb-4">
         Record a voice note
       </p>
+      <p className="text-center text-sm text-[#45383C]/70 italic mb-4">
+        Voice notes are saved for the couple. They do not currently play on the live wall.
+        <br />
+        ظٹطھظ… ط­ظپط¸ ط§ظ„ط±ط³ط§ط¦ظ„ ط§ظ„طµظˆطھظٹط© ظ„ظ„ط¹ط±ظˆط³ظٹظ†طŒ ظ„ظƒظ†ظ‡ط§ ظ„ط§ طھظڈط¹ط±ط¶ ط­ط§ظ„ظٹط§ظ‹ ط¹ظ„ظ‰ ط´ط§ط´ط© ط§ظ„ط°ظƒط±ظٹط§طھ ط§ظ„ط­ظٹط©.
+      </p>
       <div className="text-center py-4">
         {!recording && !blob && (
           <button
@@ -460,13 +349,13 @@ function VoicePanel({ tableToken, onBack }: { tableToken: string; onBack: () => 
             className="w-24 h-24 rounded-full bg-gradient-to-br from-[#D48A96] to-[#B25A6C] text-[#F9F3F3] text-3xl shadow-lg hover:scale-105 transition-transform"
             aria-label="Start recording"
           >
-            🎙️
+            ًںژ™ï¸ڈ
           </button>
         )}
         {recording && (
           <div className="space-y-4">
             <div className="w-24 h-24 mx-auto rounded-full bg-red-600 text-white text-3xl flex items-center justify-center animate-pulse">
-              ●
+              â—ڈ
             </div>
             <p className="text-2xl font-medium tabular-nums">
               0:{String(seconds).padStart(2, '0')}
@@ -512,7 +401,7 @@ function VoicePanel({ tableToken, onBack }: { tableToken: string; onBack: () => 
             onClick={submit}
             className="w-full mt-4 py-3.5 bg-gradient-to-br from-[#D48A96] to-[#B25A6C] text-[#F9F3F3] uppercase tracking-widest text-xs font-semibold disabled:opacity-50"
           >
-            {busy ? 'Sending…' : 'Send voice note'}
+            {busy ? 'Sendingâ€¦' : 'Send voice note'}
           </button>
         </>
       )}
@@ -549,7 +438,7 @@ function ProgramPanel({
               day: 'numeric',
             })
           : ''}
-        {event ? ` · ${event.venueName}` : ''}
+        {event ? ` آ· ${event.venueName}` : ''}
       </p>
       <div className="space-y-0">
         {items.map((item, i) => (
@@ -569,3 +458,4 @@ function ProgramPanel({
     </Card>
   );
 }
+

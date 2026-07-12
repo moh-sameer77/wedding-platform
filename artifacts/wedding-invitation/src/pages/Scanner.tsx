@@ -15,13 +15,32 @@ interface RecentCheckin {
   scannedBy: string | null;
 }
 
+const QR_READER_ID = 'qr-reader';
+
+type CameraStatus = 'idle' | 'starting' | 'scanning' | 'failed';
+
+interface CameraOption {
+  id: string;
+  label: string;
+}
+
+function cameraSupportMessage(): string | null {
+  if (!window.isSecureContext) {
+    return 'Camera access requires HTTPS on mobile browsers. Open the scanner from the deployed HTTPS URL, not an IP/http link.';
+  }
+  if (!navigator.mediaDevices?.getUserMedia) {
+    return 'This browser does not expose camera access. Use an updated Safari, Chrome, or Edge browser, or upload a QR image below.';
+  }
+  return null;
+}
+
 export default function ScannerPage() {
   usePageTitle('Entrance Scanner');
   return (
     <LoginGate
-      roles={['guard']}
+      roles={['guard', 'admin']}
       title="Entrance Scanner"
-      subtitle="Guard access · Mohammad & Renad Wedding"
+      subtitle="Guard or admin access · Mohammad & Renad Wedding"
     >
       {(user, logout) => <ScannerScreen userName={user.name} logout={logout} />}
     </LoginGate>
@@ -39,12 +58,17 @@ function ScannerScreen({
   const [manualToken, setManualToken] = useState('');
   const [count, setCount] = useState(1);
   const [needsOverride, setNeedsOverride] = useState(false);
+  const [overrideReason, setOverrideReason] = useState('');
   const [overrideNote, setOverrideNote] = useState('');
   const [success, setSuccess] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
+  const [cameraStatus, setCameraStatus] = useState<CameraStatus>('idle');
+  const [cameras, setCameras] = useState<CameraOption[]>([]);
+  const [selectedCameraId, setSelectedCameraId] = useState('');
   const scannerRef = useRef<Html5Qrcode | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const resolvingRef = useRef(false);
   const queryClient = useQueryClient();
 
@@ -76,8 +100,128 @@ function ScannerScreen({
     }
   }, []);
 
+  const stopScanner = useCallback(async () => {
+    const scanner = scannerRef.current;
+    if (!scanner) return;
+    try {
+      if ((scanner as { isScanning?: boolean }).isScanning) {
+        await scanner.stop();
+      }
+    } catch {
+      // Mobile browsers can throw if permission was revoked or the stream ended.
+    }
+    try {
+      await scanner.clear();
+    } catch {
+      // A failed start can leave nothing to clear.
+    }
+    scannerRef.current = null;
+    setCameraStatus('idle');
+  }, []);
+
+  const startScanner = useCallback(async () => {
+    const unsupported = cameraSupportMessage();
+    if (unsupported) {
+      setCameraError(unsupported);
+      setCameraStatus('failed');
+      return;
+    }
+
+    setCameraError(null);
+    setCameraStatus('starting');
+    await stopScanner();
+
+    const scanner = new Html5Qrcode(QR_READER_ID, { verbose: false });
+    scannerRef.current = scanner;
+    const onDecoded = (decoded: string) => resolveToken(decoded);
+    const config = {
+      fps: 10,
+      qrbox: (viewfinderWidth: number, viewfinderHeight: number) => {
+        const edge = Math.floor(Math.min(viewfinderWidth, viewfinderHeight) * 0.72);
+        const size = Math.max(220, Math.min(edge, 320));
+        return { width: size, height: size };
+      },
+      aspectRatio: 1,
+      rememberLastUsedCamera: true,
+      disableFlip: false,
+    };
+
+    try {
+      const available = await Html5Qrcode.getCameras();
+      const options = available.map((camera) => ({
+        id: camera.id,
+        label: camera.label || `Camera ${camera.id.slice(0, 6)}`,
+      }));
+      setCameras(options);
+      const rear =
+        selectedCameraId ||
+        options.find((camera) => /back|rear|environment/i.test(camera.label))?.id ||
+        options[0]?.id ||
+        '';
+      if (rear && !selectedCameraId) setSelectedCameraId(rear);
+
+      if (rear) {
+        await scanner.start(rear, config, onDecoded, () => undefined);
+      } else {
+        await scanner.start({ facingMode: { ideal: 'environment' } }, config, onDecoded, () => undefined);
+      }
+      setCameraStatus('scanning');
+      return;
+    } catch (primaryError) {
+      try {
+        await scanner.start({ facingMode: 'environment' }, config, onDecoded, () => undefined);
+        setCameraStatus('scanning');
+        return;
+      } catch {
+        try {
+          await scanner.start({ facingMode: 'user' }, config, onDecoded, () => undefined);
+          setCameraStatus('scanning');
+          return;
+        } catch {
+          try {
+            await scanner.start({}, config, onDecoded, () => undefined);
+            setCameraStatus('scanning');
+            return;
+          } catch (fallbackError) {
+            const message =
+              fallbackError instanceof Error
+                ? fallbackError.message
+                : primaryError instanceof Error
+                  ? primaryError.message
+                  : 'Camera unavailable. Check browser permission, HTTPS, and whether another app is using the camera.';
+            setCameraError(message);
+            setCameraStatus('failed');
+          }
+        }
+      }
+    }
+  }, [resolveToken, selectedCameraId, stopScanner]);
+
+  const scanQrImage = async (file: File | undefined) => {
+    if (!file) return;
+    setCameraError(null);
+    try {
+      let scanner = scannerRef.current;
+      if (!scanner) {
+        scanner = new Html5Qrcode(QR_READER_ID, { verbose: false });
+        scannerRef.current = scanner;
+      }
+      const decoded = await scanner.scanFile(file, false);
+      resolveToken(decoded);
+    } catch (err) {
+      setCameraError(
+        err instanceof Error
+          ? `Could not read QR from image: ${err.message}`
+          : 'Could not read QR from image.',
+      );
+    } finally {
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
   // Camera QR scanning; guards can always fall back to manual entry.
   useEffect(() => {
+    return;
     const scanner = new Html5Qrcode('qr-reader');
     scannerRef.current = scanner;
     scanner
@@ -101,11 +245,18 @@ function ScannerScreen({
     };
   }, [resolveToken]);
 
+  useEffect(() => {
+    return () => {
+      void stopScanner();
+    };
+  }, [stopScanner]);
+
   const reset = () => {
     setResult(null);
     setSuccess(null);
     setError(null);
     setNeedsOverride(false);
+    setOverrideReason('');
     setOverrideNote('');
     setManualToken('');
   };
@@ -121,7 +272,8 @@ function ScannerScreen({
           token: result.token,
           count,
           override,
-          notes: override ? overrideNote : undefined,
+          overrideReason: override ? overrideReason : undefined,
+          overrideNote: override ? overrideNote : undefined,
         },
       );
       setSuccess(
@@ -232,9 +384,74 @@ function ScannerScreen({
         {/* Camera viewport stays mounted; results overlay below it */}
         <div className={result || success ? 'hidden' : ''}>
           <div
-            id="qr-reader"
+            id={QR_READER_ID}
             className="overflow-hidden border border-[#D48A96]/40 bg-black min-h-[260px]"
           />
+          <div className="mt-3 space-y-3">
+            {cameras.length > 1 && (
+              <label className="block text-xs">
+                <span className="block text-[10px] uppercase tracking-widest opacity-60 mb-1">
+                  Camera
+                </span>
+                <select
+                  value={selectedCameraId}
+                  onChange={async (e) => {
+                    setSelectedCameraId(e.target.value);
+                    if (cameraStatus === 'scanning') {
+                      await stopScanner();
+                    }
+                  }}
+                  className="w-full px-3 py-3 bg-white/10 border border-[#D48A96]/40 text-sm focus:outline-none focus:border-[#D48A96]"
+                >
+                  {cameras.map((camera) => (
+                    <option key={camera.id} value={camera.id} className="text-black">
+                      {camera.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
+
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                disabled={cameraStatus === 'starting'}
+                onClick={startScanner}
+                className="px-4 py-3 bg-[#D48A96] text-[#2A1E23] uppercase tracking-widest text-xs font-bold disabled:opacity-50"
+              >
+                {cameraStatus === 'starting'
+                  ? 'Starting...'
+                  : cameraStatus === 'scanning'
+                    ? 'Restart camera'
+                    : 'Start camera'}
+              </button>
+              <button
+                type="button"
+                onClick={stopScanner}
+                className="px-4 py-3 border border-[#D48A96]/50 uppercase tracking-widest text-xs"
+              >
+                Stop
+              </button>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="w-full px-4 py-3 border border-[#D48A96]/50 uppercase tracking-widest text-xs"
+            >
+              Scan QR from image
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              capture="environment"
+              className="hidden"
+              onChange={(e) => {
+                void scanQrImage(e.target.files?.[0]);
+              }}
+            />
+          </div>
           {cameraError && (
             <p className="text-xs text-amber-400 mt-2 text-center">
               {cameraError}
@@ -323,9 +540,15 @@ function ScannerScreen({
                       Extra guest detected — approval required
                     </p>
                     <input
+                      value={overrideReason}
+                      onChange={(e) => setOverrideReason(e.target.value)}
+                      placeholder="Reason for escalation (optional)"
+                      className="w-full px-3 py-3 bg-white/10 border border-amber-500/50 text-sm focus:outline-none"
+                    />
+                    <input
                       value={overrideNote}
                       onChange={(e) => setOverrideNote(e.target.value)}
-                      placeholder="Note: who approved this? (required)"
+                      placeholder="Guard note: who approved this? (required)"
                       className="w-full px-3 py-3 bg-white/10 border border-amber-500/50 text-sm focus:outline-none"
                     />
                     <div className="flex gap-2">

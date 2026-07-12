@@ -30,6 +30,7 @@ const ROTATE_MS = 9000;
  */
 export default function Wall() {
   usePageTitle('Live Memory Wall');
+  const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
   const query = useQuery({
     queryKey: ['wall-items'],
     queryFn: () =>
@@ -68,6 +69,21 @@ export default function Wall() {
     return () => clearInterval(t);
   }, [items.length]);
 
+  useEffect(() => {
+    const onChange = () => setIsFullscreen(Boolean(document.fullscreenElement));
+    document.addEventListener('fullscreenchange', onChange);
+    onChange();
+    return () => document.removeEventListener('fullscreenchange', onChange);
+  }, []);
+
+  const toggleFullscreen = async () => {
+    if (!document.fullscreenElement) {
+      await document.documentElement.requestFullscreen();
+      return;
+    }
+    await document.exitFullscreen();
+  };
+
   const current = items.length > 0 ? items[index % items.length]! : null;
   const coupleNames = query.data?.event.coupleNames ?? 'Mohammad & Renad';
 
@@ -78,6 +94,15 @@ export default function Wall() {
       <FallingPetals count={14} />
 
       <header className="relative z-20 text-center pt-8 md:pt-10 pb-2">
+        <div className="absolute right-4 top-2 md:right-8 md:top-0">
+          <button
+            type="button"
+            onClick={() => void toggleFullscreen()}
+            className="px-3 py-2 border border-[#D48A96]/45 bg-black/20 text-[10px] uppercase tracking-[0.2em] text-[#F9F3F3]/80 hover:bg-[#D48A96]/10 transition-colors"
+          >
+            {isFullscreen ? 'Exit Full Screen / إنهاء ملء الشاشة' : 'Full Screen / ملء الشاشة'}
+          </button>
+        </div>
         <p className="font-script text-4xl sm:text-5xl md:text-7xl gold-shimmer-light drop-shadow-lg pb-2">
           {coupleNames}
         </p>
@@ -124,8 +149,10 @@ export default function Wall() {
             >
               <p className="font-script text-6xl text-[#D48A96]/80 mb-6">Share the joy</p>
               <p className="text-lg text-[#F9F3F3]/70 italic leading-relaxed">
-                Scan the QR card on your table to share photos and wishes —
-                they will appear here for everyone to enjoy.
+                Share photos from the invitation memories screen or leave a wish
+                from the guestbook to have it shown here for everyone to enjoy.
+                <br />
+                شاركوا الصور من شاشة الذكريات في الدعوة أو اكتبوا تهنئة من سجل التهاني لتظهر هنا ليستمتع بها الجميع.
               </p>
             </motion.div>
           )}

@@ -4,8 +4,16 @@ import { eq } from "drizzle-orm";
 import { db, usersTable, sessionsTable } from "@workspace/db";
 import { generateToken, verifyPassword } from "../lib/crypto";
 import { requireAuth } from "../middlewares/auth";
+import { createRateLimit } from "../middlewares/rate-limit";
 
 const router: IRouter = Router();
+router.use(
+  createRateLimit({
+    id: "auth",
+    max: 20,
+    windowMs: 60_000,
+  }),
+);
 
 const loginSchema = z.object({
   username: z.string().min(1),

@@ -10,14 +10,48 @@ import {
   type Invitation,
 } from "@workspace/db";
 import { requireAuth } from "../middlewares/auth";
+import { createRateLimit } from "../middlewares/rate-limit";
+import { verifyQrTokenSignature } from "../lib/crypto";
 
 const router: IRouter = Router();
+router.use(
+  createRateLimit({
+    id: "scanner",
+    max: 90,
+    windowMs: 60_000,
+  }),
+);
 
-/** Tokens may arrive as a raw token or a full scanned URL like https://host/i/<token>. */
-function normalizeToken(raw: string): string {
-  const match = raw.match(/\/i\/([A-Za-z0-9_-]+)/);
-  if (match?.[1]) return match[1];
-  return raw.trim();
+type ParsedScan = {
+  token: string;
+  hasSignedQr: boolean;
+  signatureValid: boolean;
+};
+
+/** Tokens may arrive as a raw token or a full scanned URL like https://host/i/<token>?qr=<sig>. */
+function normalizeToken(raw: string): ParsedScan {
+  const trimmed = raw.trim();
+  try {
+    const url = new URL(trimmed);
+    const inviteMatch = url.pathname.match(/\/i\/([A-Za-z0-9_-]+)/);
+    if (inviteMatch?.[1]) {
+      const signature = url.searchParams.get("qr");
+      return {
+        token: inviteMatch[1],
+        hasSignedQr: Boolean(signature),
+        signatureValid: signature
+          ? verifyQrTokenSignature("invite", inviteMatch[1], signature)
+          : false,
+      };
+    }
+  } catch {
+    // Raw token/manual code input falls through below.
+  }
+  const match = trimmed.match(/\/i\/([A-Za-z0-9_-]+)/);
+  if (match?.[1]) {
+    return { token: match[1], hasSignedQr: false, signatureValid: false };
+  }
+  return { token: trimmed, hasSignedQr: false, signatureValid: false };
 }
 
 async function checkedInCount(invitationId: number): Promise<number> {
@@ -57,11 +91,15 @@ router.get(
   requireAuth("guard"),
   async (req, res, next) => {
     try {
-      const token = normalizeToken(String(req.params.token));
+      const parsed = normalizeToken(String(req.params.token));
+      if (parsed.hasSignedQr && !parsed.signatureValid) {
+        res.json({ status: "invalid" });
+        return;
+      }
       const [invitation] = await db
         .select()
         .from(invitationsTable)
-        .where(eq(invitationsTable.token, token));
+        .where(eq(invitationsTable.token, parsed.token));
       if (!invitation) {
         res.json({ status: "invalid" });
         return;
@@ -73,7 +111,7 @@ router.get(
       const details = await invitationStatus(invitation);
       res.json({
         status: details.remaining <= 0 ? "full" : "valid",
-        token,
+        token: parsed.token,
         ...details,
       });
     } catch (err) {
@@ -86,6 +124,8 @@ const checkinSchema = z.object({
   token: z.string().min(1),
   count: z.number().int().min(1).max(50),
   override: z.boolean().optional(),
+  overrideReason: z.string().max(200).optional(),
+  overrideNote: z.string().max(500).optional(),
   notes: z.string().max(500).optional(),
 });
 
@@ -97,7 +137,12 @@ router.post("/checkin", requireAuth("guard"), async (req, res, next) => {
       res.status(400).json({ error: "Invalid check-in payload" });
       return;
     }
-    const token = normalizeToken(parsed.data.token);
+    const normalized = normalizeToken(parsed.data.token);
+    if (normalized.hasSignedQr && !normalized.signatureValid) {
+      res.status(400).json({ error: "Invalid QR signature" });
+      return;
+    }
+    const token = normalized.token;
     const [invitation] = await db
       .select()
       .from(invitationsTable)
@@ -120,19 +165,29 @@ router.post("/checkin", requireAuth("guard"), async (req, res, next) => {
       });
       return;
     }
-    if (isOverCapacity && !parsed.data.notes?.trim()) {
+    const overrideReason = parsed.data.overrideReason?.trim() ?? "";
+    const overrideNote =
+      parsed.data.overrideNote?.trim() ?? parsed.data.notes?.trim() ?? "";
+    if (isOverCapacity && !overrideNote) {
       res
         .status(400)
-        .json({ error: "A note is required when overriding extra guests" });
+        .json({
+          error: "A note is required when overriding extra guests",
+        });
       return;
     }
+    const notes = isOverCapacity
+      ? overrideReason
+        ? `Reason: ${overrideReason}\nNote: ${overrideNote}`
+        : `Note: ${overrideNote}`
+      : parsed.data.notes ?? null;
     await db.insert(checkinsTable).values({
       eventId: invitation.eventId,
       invitationId: invitation.id,
       count: parsed.data.count,
       scannedByUserId: req.user!.id,
       isOverride: isOverCapacity,
-      notes: parsed.data.notes ?? null,
+      notes,
     });
     const details = await invitationStatus(invitation);
     res.status(201).json({ ok: true, isOverride: isOverCapacity, ...details });

@@ -1,9 +1,17 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import LoginGate from '@/components/LoginGate';
 import { useToast } from '@/hooks/use-toast';
 import { api, getSessionToken, publicUrl } from '@/lib/api';
 import { usePageTitle } from '@/hooks/use-page-title';
+import {
+  DEFAULT_SECTIONS,
+  EDITABLE_TEXTS,
+  SECTION_LABELS,
+  resolveSections,
+  type InvitationConfig,
+  type SectionId,
+} from '@/lib/i18n';
 
 // ---------- types ----------
 
@@ -28,8 +36,12 @@ interface EventSettings {
   status: 'draft' | 'live' | 'archived';
   autoApprove: boolean;
   guestbookPublic: boolean;
+  uploadsEnabled: boolean;
+  maxUploadsPerGuest: number;
+  tablesEnabled: boolean;
   welcomeMessage: string | null;
   thankYouMessage: string | null;
+  invitationConfig: unknown;
 }
 
 interface AdminInvitation {
@@ -126,6 +138,12 @@ function AdminScreen({
     refetchInterval: tab === 'overview' ? 10000 : false,
   });
   const pendingCount = dashboardQuery.data?.metrics.pendingModeration ?? 0;
+  const tablesEnabled = dashboardQuery.data?.event.tablesEnabled ?? false;
+  const visibleTabs = TABS.filter((t) => t.id !== 'tables' || tablesEnabled);
+
+  useEffect(() => {
+    if (!tablesEnabled && tab === 'tables') setTab('settings');
+  }, [tablesEnabled, tab]);
 
   return (
     <div className="min-h-[100dvh] bg-[#F6ECEA] font-serif text-[#45383C]">
@@ -169,7 +187,7 @@ function AdminScreen({
       </header>
 
       <nav className="bg-[#F9F3F3] border-b border-[#D48A96]/30 px-2 sm:px-6 flex gap-1 overflow-x-auto">
-        {TABS.map((t) => (
+        {visibleTabs.map((t) => (
           <button
             key={t.id}
             onClick={() => setTab(t.id)}
@@ -192,7 +210,7 @@ function AdminScreen({
       <main className="max-w-6xl mx-auto p-4 sm:p-6">
         {tab === 'overview' && <OverviewTab data={dashboardQuery.data} />}
         {tab === 'guests' && <GuestsTab />}
-        {tab === 'tables' && <TablesTab />}
+        {tab === 'tables' && tablesEnabled && <TablesTab />}
         {tab === 'moderation' && <ModerationTab />}
         {tab === 'settings' && (
           <SettingsTab event={dashboardQuery.data?.event ?? null} />
@@ -300,15 +318,9 @@ function GuestsTab() {
     queryKey: ['admin-invitations'],
     queryFn: () => api.get<{ invitations: AdminInvitation[] }>('/admin/invitations'),
   });
-  const tablesQuery = useQuery({
-    queryKey: ['admin-tables'],
-    queryFn: () => api.get<{ tables: AdminTable[] }>('/admin/tables'),
-  });
-
   const refresh = () => {
     queryClient.invalidateQueries({ queryKey: ['admin-invitations'] });
     queryClient.invalidateQueries({ queryKey: ['admin-dashboard'] });
-    queryClient.invalidateQueries({ queryKey: ['admin-tables'] });
   };
 
   const createMutation = useMutation({
@@ -317,7 +329,6 @@ function GuestsTab() {
         guestName: form.guestName.trim(),
         phone: form.phone.trim() || null,
         allowedCount: form.allowedCount,
-        tableId: form.tableId ? Number(form.tableId) : null,
       }),
     onSuccess: () => {
       setForm({ guestName: '', phone: '', allowedCount: 2, tableId: '' });
@@ -348,10 +359,9 @@ function GuestsTab() {
         guestName: cols[0]!,
         phone: cols[1] || undefined,
         allowedCount: Number(cols[2]) > 0 ? Number(cols[2]) : 1,
-        tableName: cols[3] || undefined,
       }));
     if (rows.length === 0) {
-      toast({ title: 'No rows found', description: 'Expected columns: name, phone, allowed count, table' });
+      toast({ title: 'No rows found', description: 'Expected columns: name, phone, allowed count' });
       return;
     }
     try {
@@ -371,11 +381,11 @@ function GuestsTab() {
   const inviteText = (inv: AdminInvitation, lang: 'en' | 'ar') =>
     lang === 'ar'
       ? `بكل حب وسعادة، نتشرف بدعوتكم لمشاركتنا فرحتنا في يوم زفافنا 💍\n` +
-        `محمد ورناد — السبت ٢٥ تموز ٢٠٢٦ · تال باين، عمّان\n` +
+        `محمد ورناد — السبت ٢٥ تموز ٢٠٢٦ · ٧:٠٠ مساءً · تل الصنوبر، عمّان\n` +
         `دعوتكم الشخصية (${inv.allowedCount} ${inv.allowedCount === 1 ? 'مقعد' : 'مقاعد'}):\n` +
         inviteUrl(inv, 'ar')
       : `With love and joy, we invite you to celebrate our wedding day with us. 💍\n` +
-        `Mohammad & Renad — Saturday, July 25, 2026 · Tal Pine, Amman\n` +
+        `Mohammad & Renad — Saturday, July 25, 2026 · 7:00 PM · Tal Pine, Amman\n` +
         `Your personal invitation (${inv.allowedCount} ${inv.allowedCount === 1 ? 'seat' : 'seats'}):\n` +
         inviteUrl(inv, 'en');
 
@@ -397,14 +407,14 @@ function GuestsTab() {
   };
 
   const invitations = invitationsQuery.data?.invitations ?? [];
-  const tables = tablesQuery.data?.tables ?? [];
+  const tables: AdminTable[] = [];
 
   return (
     <div className="space-y-6">
       <section className="bg-[#F9F3F3] border border-[#D48A96]/30 p-4">
         <h2 className="text-xs uppercase tracking-[0.25em] text-[#45383C]/50 mb-3">Add guest / family</h2>
         <form
-          className="grid grid-cols-1 sm:grid-cols-[2fr_1.5fr_auto_1.5fr_auto] gap-2 items-end"
+          className="grid grid-cols-1 sm:grid-cols-[2fr_1.5fr_auto_auto] gap-2 items-end"
           onSubmit={(e) => {
             e.preventDefault();
             if (form.guestName.trim()) createMutation.mutate();
@@ -439,7 +449,7 @@ function GuestsTab() {
               className="w-20 px-3 py-2.5 border border-[#D48A96]/40 bg-white/70 focus:outline-none focus:border-[#B25A6C]"
             />
           </label>
-          <label className="text-xs">
+          <label className="hidden">
             <span className="block text-[10px] uppercase tracking-widest opacity-60 mb-1">Table</span>
             <select
               value={form.tableId}
@@ -485,19 +495,19 @@ function GuestsTab() {
             Export attendance CSV
           </a>
           <p className="text-[10px] opacity-50 self-center">
-            CSV columns: name, phone, seats, table
+            CSV columns: name, phone, seats. Table assignment is currently disabled.
           </p>
         </div>
       </section>
 
       <section className="bg-[#F9F3F3] border border-[#D48A96]/30 overflow-x-auto">
-        <table className="w-full text-sm min-w-[820px]">
+        <table className="w-full text-sm min-w-[720px]">
           <thead>
             <tr className="text-left text-[10px] uppercase tracking-[0.15em] text-[#45383C]/50 border-b border-[#D48A96]/25">
               <th className="px-4 py-3">Guest</th>
               <th className="px-2 py-3">Seats</th>
               <th className="px-2 py-3">RSVP</th>
-              <th className="px-2 py-3">Table</th>
+              <th className="hidden">Table</th>
               <th className="px-2 py-3">Checked in</th>
               <th className="px-2 py-3">Share</th>
               <th className="px-2 py-3"></th>
@@ -510,7 +520,7 @@ function GuestsTab() {
                   <p className="font-medium">{inv.guestName}</p>
                   <p className="text-xs opacity-55">{inv.phone ?? '—'}</p>
                 </td>
-                <td className="px-2 py-2.5">
+                <td className="hidden">
                   <input
                     type="number"
                     min={1}
@@ -888,11 +898,53 @@ function ModerationTab() {
 
 // ---------- settings ----------
 
+const EMPTY_INVITATION_CONFIG: InvitationConfig = {
+  sections: DEFAULT_SECTIONS,
+  texts: {},
+  backgrounds: {},
+};
+
+function normalizeInvitationConfig(value: unknown): InvitationConfig {
+  let raw = value;
+  if (typeof value === 'string' && value.trim()) {
+    try {
+      raw = JSON.parse(value);
+    } catch {
+      raw = null;
+    }
+  }
+  const config =
+    raw && typeof raw === 'object' ? (raw as InvitationConfig) : EMPTY_INVITATION_CONFIG;
+  return {
+    sections: resolveSections(config),
+    texts: config.texts ?? {},
+    backgrounds: config.backgrounds ?? {},
+  };
+}
+
 function SettingsTab({ event }: { event: EventSettings | null }) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [welcome, setWelcome] = useState<string | null>(null);
   const [thanks, setThanks] = useState<string | null>(null);
+  const [uploadsEnabled, setUploadsEnabled] = useState(true);
+  const [maxUploadsPerGuest, setMaxUploadsPerGuest] = useState(5);
+  const [configDraft, setConfigDraft] = useState<InvitationConfig>(
+    EMPTY_INVITATION_CONFIG,
+  );
+  const [uploadingBg, setUploadingBg] = useState<
+    keyof NonNullable<InvitationConfig['backgrounds']> | null
+  >(null);
+
+  useEffect(() => {
+    if (event) setConfigDraft(normalizeInvitationConfig(event.invitationConfig));
+  }, [event?.id, event?.invitationConfig]);
+
+  useEffect(() => {
+    if (!event) return;
+    setUploadsEnabled(event.uploadsEnabled);
+    setMaxUploadsPerGuest(event.maxUploadsPerGuest);
+  }, [event?.id, event?.uploadsEnabled, event?.maxUploadsPerGuest]);
 
   if (!event) return <p className="text-sm opacity-60">Loading…</p>;
 
@@ -906,8 +958,75 @@ function SettingsTab({ event }: { event: EventSettings | null }) {
     }
   };
 
+  const setSection = (id: SectionId, patch: Partial<{ enabled: boolean }>) => {
+    setConfigDraft((current) => ({
+      ...current,
+      sections: resolveSections(current).map((section) =>
+        section.id === id ? { ...section, ...patch } : section,
+      ),
+    }));
+  };
+
+  const moveSection = (id: SectionId, direction: -1 | 1) => {
+    setConfigDraft((current) => {
+      const sections = resolveSections(current);
+      const index = sections.findIndex((section) => section.id === id);
+      const nextIndex = index + direction;
+      if (index < 0 || nextIndex < 0 || nextIndex >= sections.length) return current;
+      const next = [...sections];
+      const [item] = next.splice(index, 1);
+      next.splice(nextIndex, 0, item!);
+      return { ...current, sections: next };
+    });
+  };
+
+  const setText = (key: string, lang: 'en' | 'ar', value: string) => {
+    setConfigDraft((current) => ({
+      ...current,
+      texts: {
+        ...(current.texts ?? {}),
+        [key]: {
+          ...(current.texts?.[key] ?? {}),
+          [lang]: value,
+        },
+      },
+    }));
+  };
+
+  const setBackground = (
+    key: keyof NonNullable<InvitationConfig['backgrounds']>,
+    value: string | null | undefined,
+  ) => {
+    setConfigDraft((current) => ({
+      ...current,
+      backgrounds: {
+        ...(current.backgrounds ?? {}),
+        [key]: value,
+      },
+    }));
+  };
+
+  const uploadBackground = async (
+    key: keyof NonNullable<InvitationConfig['backgrounds']>,
+    file: File | undefined,
+  ) => {
+    if (!file) return;
+    setUploadingBg(key);
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      const result = await api.post<{ url: string }>('/admin/asset', fd);
+      setBackground(key, result.url);
+      toast({ title: 'Image uploaded', duration: 2500 });
+    } catch (e) {
+      toast({ title: 'Upload failed', description: e instanceof Error ? e.message : '' });
+    } finally {
+      setUploadingBg(null);
+    }
+  };
+
   return (
-    <div className="max-w-2xl space-y-6">
+    <div className="max-w-4xl space-y-6">
       <section className="bg-[#F9F3F3] border border-[#D48A96]/30 p-5 space-y-4">
         <h2 className="text-xs uppercase tracking-[0.25em] text-[#45383C]/50">Event mode</h2>
         <div className="flex gap-2">
@@ -942,7 +1061,114 @@ function SettingsTab({ event }: { event: EventSettings | null }) {
       </section>
 
       <section className="bg-[#F9F3F3] border border-[#D48A96]/30 p-5 space-y-4">
+        <div>
+          <h2 className="text-xs uppercase tracking-[0.25em] text-[#45383C]/50">Guest uploads</h2>
+          <p className="text-[11px] opacity-55 mt-2 leading-relaxed">
+            Control whether guests can add memories from the invitation or table screens, and
+            choose the per-guest upload cap.
+            <br />
+            تحكموا إذا كان الضيوف يستطيعون رفع الذكريات من شاشة الدعوة أو شاشة الطاولة، وحددوا الحد الأعلى لكل ضيف.
+          </p>
+        </div>
+        <div className="grid gap-4 md:grid-cols-[1.3fr_0.7fr]">
+          <label className="flex items-start gap-3 text-sm rounded-2xl border border-[#D48A96]/25 bg-white/55 p-4">
+            <input
+              type="checkbox"
+              checked={uploadsEnabled}
+              onChange={(e) => setUploadsEnabled(e.target.checked)}
+              className="w-4 h-4 mt-0.5 accent-[#B25A6C]"
+            />
+            <span>
+              <span className="block font-medium">
+                {uploadsEnabled ? 'Uploads enabled' : 'Uploads locked'}
+              </span>
+              <span className="block text-[11px] opacity-55 mt-1 leading-relaxed">
+                When locked, guests can still confirm RSVP and send guestbook wishes, but photo
+                and voice uploads are hidden.
+                <br />
+                عند الإغلاق، يبقى تأكيد الحضور ورسائل سجل التهاني متاحين، لكن رفع الصور والرسائل الصوتية يختفي.
+              </span>
+            </span>
+          </label>
+          <div className="rounded-2xl border border-[#D48A96]/25 bg-white/55 p-4 space-y-3">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-medium">Max uploads per guest</p>
+                <p className="text-[11px] opacity-55">
+                  Applies to memories and voice notes together.
+                  <br />
+                  ينطبق على الذكريات والرسائل الصوتية معاً.
+                </p>
+              </div>
+              <input
+                type="number"
+                min={1}
+                max={20}
+                value={maxUploadsPerGuest}
+                onChange={(e) =>
+                  setMaxUploadsPerGuest(
+                    Math.min(20, Math.max(1, Number(e.target.value) || 1)),
+                  )
+                }
+                className="w-20 px-3 py-2 border border-[#D48A96]/35 bg-white text-sm focus:outline-none focus:border-[#B25A6C]"
+              />
+            </div>
+            <input
+              type="range"
+              min={1}
+              max={20}
+              value={maxUploadsPerGuest}
+              onChange={(e) => setMaxUploadsPerGuest(Number(e.target.value))}
+              className="w-full accent-[#B25A6C]"
+            />
+            <div className="flex items-center justify-between text-[10px] uppercase tracking-[0.18em] text-[#45383C]/45">
+              <span>1</span>
+              <span>{maxUploadsPerGuest} per guest</span>
+              <span>20</span>
+            </div>
+          </div>
+        </div>
+        <div className="flex flex-wrap gap-3">
+          <button
+            onClick={() =>
+              save({
+                uploadsEnabled,
+                maxUploadsPerGuest,
+              })
+            }
+            className="px-6 py-2.5 bg-gradient-to-br from-[#D48A96] to-[#B25A6C] text-[#F9F3F3] uppercase tracking-widest text-xs font-semibold"
+          >
+            Save upload controls
+          </button>
+          <p className="text-[11px] opacity-55 self-center">
+            The current limit is shared by both invitation and table upload flows.
+          </p>
+        </div>
+      </section>
+
+      <section className="bg-[#F9F3F3] border border-[#D48A96]/30 p-5 space-y-4">
         <h2 className="text-xs uppercase tracking-[0.25em] text-[#45383C]/50">Moderation</h2>
+        <label className="flex items-start gap-3 text-sm">
+          <input
+            type="checkbox"
+            checked={event.tablesEnabled}
+            onChange={(e) => {
+              if (
+                !e.target.checked ||
+                window.confirm('Enable table assignments and table QR pages?')
+              ) {
+                save({ tablesEnabled: e.target.checked });
+              }
+            }}
+            className="w-4 h-4 mt-0.5 accent-[#B25A6C]"
+          />
+          <span>
+            Table assignments and table QR pages
+            <span className="block text-[11px] opacity-55">
+              Currently off. While off, guests are not tied to tables and table names are hidden from invitations.
+            </span>
+          </span>
+        </label>
         <label className="flex items-center gap-3 text-sm">
           <input
             type="checkbox"
@@ -994,6 +1220,123 @@ function SettingsTab({ event }: { event: EventSettings | null }) {
         >
           Save wording
         </button>
+      </section>
+
+      <section className="bg-[#F9F3F3] border border-[#D48A96]/30 p-5 space-y-5">
+        <div>
+          <h2 className="text-xs uppercase tracking-[0.25em] text-[#45383C]/50">Invitation card editor</h2>
+          <p className="text-[11px] opacity-55 mt-2">
+            Blank text fields use the built-in default copy. Save applies to both public and personal invitation links.
+          </p>
+        </div>
+
+        <div>
+          <h3 className="text-[10px] uppercase tracking-widest opacity-60 mb-2">Sections</h3>
+          <div className="space-y-2">
+            {resolveSections(configDraft).map((section, index, all) => (
+              <div key={section.id} className="flex items-center gap-2 bg-white/55 border border-[#D48A96]/25 px-3 py-2">
+                <input
+                  type="checkbox"
+                  checked={section.enabled}
+                  onChange={(e) => setSection(section.id, { enabled: e.target.checked })}
+                  className="w-4 h-4 accent-[#B25A6C]"
+                />
+                <span className="flex-1 text-sm">{SECTION_LABELS[section.id]}</span>
+                <button
+                  type="button"
+                  disabled={index === 0}
+                  onClick={() => moveSection(section.id, -1)}
+                  className="px-2 py-1 border border-[#D48A96]/35 text-xs disabled:opacity-30"
+                >
+                  Up
+                </button>
+                <button
+                  type="button"
+                  disabled={index === all.length - 1}
+                  onClick={() => moveSection(section.id, 1)}
+                  className="px-2 py-1 border border-[#D48A96]/35 text-xs disabled:opacity-30"
+                >
+                  Down
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <h3 className="text-[10px] uppercase tracking-widest opacity-60 mb-2">Text overrides</h3>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+            {EDITABLE_TEXTS.map(({ key, label }) => (
+              <div key={key} className="bg-white/55 border border-[#D48A96]/25 p-3">
+                <p className="text-[10px] uppercase tracking-widest opacity-60 mb-2">{label}</p>
+                <textarea
+                  rows={2}
+                  value={configDraft.texts?.[key]?.en ?? ''}
+                  onChange={(e) => setText(key, 'en', e.target.value)}
+                  placeholder="English override"
+                  className="w-full px-3 py-2 border border-[#D48A96]/30 bg-white/80 text-sm focus:outline-none focus:border-[#B25A6C]"
+                />
+                <textarea
+                  rows={2}
+                  dir="rtl"
+                  value={configDraft.texts?.[key]?.ar ?? ''}
+                  onChange={(e) => setText(key, 'ar', e.target.value)}
+                  placeholder="النص العربي"
+                  className="w-full mt-2 px-3 py-2 border border-[#D48A96]/30 bg-white/80 text-sm focus:outline-none focus:border-[#B25A6C]"
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <h3 className="text-[10px] uppercase tracking-widest opacity-60 mb-2">Background images</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            {(['top', 'center', 'bottom'] as const).map((key) => (
+              <div key={key} className="bg-white/55 border border-[#D48A96]/25 p-3 space-y-2">
+                <p className="text-[10px] uppercase tracking-widest opacity-60">{key} image</p>
+                <input
+                  value={configDraft.backgrounds?.[key] ?? ''}
+                  onChange={(e) => setBackground(key, e.target.value || undefined)}
+                  placeholder={key === 'center' ? '/faded-transparent-floral-background.png' : 'Default garland'}
+                  className="w-full px-3 py-2 border border-[#D48A96]/30 bg-white/80 text-xs focus:outline-none focus:border-[#B25A6C]"
+                />
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    uploadBackground(key, e.target.files?.[0]);
+                    e.target.value = '';
+                  }}
+                  className="w-full text-xs"
+                />
+                <button
+                  type="button"
+                  onClick={() => setBackground(key, null)}
+                  className="text-xs underline underline-offset-2 text-[#B25A6C]"
+                >
+                  Hide this image
+                </button>
+                {uploadingBg === key && <p className="text-xs opacity-55">Uploading...</p>}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="flex gap-3 flex-wrap">
+          <button
+            onClick={() => save({ invitationConfig: configDraft })}
+            className="px-6 py-2.5 bg-gradient-to-br from-[#D48A96] to-[#B25A6C] text-[#F9F3F3] uppercase tracking-widest text-xs font-semibold"
+          >
+            Save invitation card
+          </button>
+          <button
+            onClick={() => setConfigDraft(EMPTY_INVITATION_CONFIG)}
+            className="px-6 py-2.5 border border-[#D48A96]/50 text-[#B25A6C] uppercase tracking-widest text-xs"
+          >
+            Reset draft
+          </button>
+        </div>
       </section>
 
       <section className="bg-[#F9F3F3] border border-[#D48A96]/30 p-5">
