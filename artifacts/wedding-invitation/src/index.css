@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400;1,500&family=Great+Vibes&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400;1,500&family=Great+Vibes&family=Amiri:ital,wght@0,400;0,700;1,400&family=Aref+Ruqaa:wght@400;700&display=swap');
 @import 'tailwindcss';
 @import 'tw-animate-css';
 @plugin "@tailwindcss/typography";
@@ -51,39 +51,42 @@
 }
 
 :root {
-  --background: 38 33% 96%;
-  --foreground: 30 20% 20%;
-  --border: 39 45% 85%;
-  
-  --card: 38 33% 96%;
-  --card-foreground: 30 20% 20%;
-  --card-border: 39 45% 85%;
-  
-  --popover: 38 33% 96%;
-  --popover-foreground: 30 20% 20%;
-  --popover-border: 39 45% 85%;
-  
-  --primary: 39 45% 61%;
-  --primary-foreground: 38 33% 96%;
-  
-  --secondary: 0 38% 73%;
-  --secondary-foreground: 30 20% 20%;
-  
-  --muted: 43 44% 92%;
-  --muted-foreground: 30 20% 40%;
-  
-  --accent: 39 45% 61%;
-  --accent-foreground: 38 33% 96%;
-  
+  --background: 0 33% 96%;
+  --foreground: 342 10% 25%;
+  --border: 351 40% 87%;
+
+  --card: 0 33% 96%;
+  --card-foreground: 342 10% 25%;
+  --card-border: 351 40% 87%;
+
+  --popover: 0 33% 96%;
+  --popover-foreground: 342 10% 25%;
+  --popover-border: 351 40% 87%;
+
+  --primary: 350 46% 69%;
+  --primary-foreground: 0 33% 97%;
+
+  --secondary: 130 12% 62%;
+  --secondary-foreground: 342 10% 25%;
+
+  --muted: 351 30% 93%;
+  --muted-foreground: 342 8% 42%;
+
+  --accent: 350 46% 69%;
+  --accent-foreground: 0 33% 97%;
+
   --destructive: 0 60% 50%;
-  --destructive-foreground: 38 33% 96%;
+  --destructive-foreground: 0 33% 96%;
   
   --input: 39 45% 85%;
   --ring: 39 45% 61%;
 
-  --app-font-sans: 'Cormorant Garamond', serif;
-  --app-font-serif: 'Cormorant Garamond', serif;
-  --app-font-script: 'Great Vibes', cursive;
+  /* One family voice across the whole system, elegant in both scripts:
+     Cormorant Garamond pairs with Amiri (classical naskh) for body text,
+     Great Vibes pairs with Aref Ruqaa (calligraphic) for display script. */
+  --app-font-sans: 'Cormorant Garamond', 'Amiri', serif;
+  --app-font-serif: 'Cormorant Garamond', 'Amiri', serif;
+  --app-font-script: 'Great Vibes', 'Aref Ruqaa', serif;
   
   --radius: 0.5rem;
 }
@@ -129,6 +132,13 @@
   }
 }
 
+/* Arabic joins letters into words — any letter-spacing breaks the script.
+   Neutralize every tracking utility inside RTL content. */
+[dir='rtl'],
+[dir='rtl'] * {
+  letter-spacing: 0 !important;
+}
+
 .bg-texture {
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.03'/%3E%3C/svg%3E");
 }
@@ -145,4 +155,87 @@
 }
 .envelope-fold-right {
   clip-path: polygon(100% 0, 50% 50%, 100% 100%);
+}
+
+/* Ambient falling petals: vertical fall uses `top` in % so it always spans
+   the full height of its (relatively positioned) container, no matter how
+   tall the invitation card grows. Sway/tumble is layered on via a nested
+   element's transform so the two animations don't fight each other. */
+@keyframes petal-fall {
+  0% { top: -8%; }
+  100% { top: 106%; }
+}
+@keyframes petal-sway {
+  0%, 100% { transform: translateX(0) rotate(var(--rot0, 0deg)); }
+  50% { transform: translateX(var(--sway, 20px)) rotate(var(--rot1, 180deg)); }
+}
+@keyframes seal-glow-pulse {
+  0%, 100% { opacity: 0.5; transform: scale(1); }
+  50% { opacity: 0.95; transform: scale(1.08); }
+}
+
+/* Rose shimmer sweep for headline names / monograms */
+.gold-shimmer {
+  background: linear-gradient(
+    100deg,
+    #45383c 0%,
+    #45383c 38%,
+    #b25a6c 47%,
+    #f2bfc7 50%,
+    #b25a6c 53%,
+    #45383c 62%,
+    #45383c 100%
+  );
+  background-size: 250% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  animation: shimmer-sweep 6s ease-in-out infinite;
+}
+.gold-shimmer-light {
+  background: linear-gradient(
+    100deg,
+    #d48a96 0%,
+    #d48a96 38%,
+    #f6d4c9 50%,
+    #d48a96 62%,
+    #d48a96 100%
+  );
+  background-size: 250% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  animation: shimmer-sweep 7s ease-in-out infinite;
+}
+@keyframes shimmer-sweep {
+  0%, 55% { background-position: 115% 0; }
+  90%, 100% { background-position: -55% 0; }
+}
+
+/* Sparkle burst when the wax seal cracks */
+@keyframes sparkle-fly {
+  0% { transform: translate(0, 0) scale(0.4); opacity: 1; }
+  70% { opacity: 1; }
+  100% {
+    transform: translate(var(--fly-x, 0px), var(--fly-y, -60px)) scale(1);
+    opacity: 0;
+  }
+}
+@keyframes sparkle-twinkle {
+  0%, 100% { opacity: 0.2; transform: scale(0.75) rotate(0deg); }
+  50% { opacity: 1; transform: scale(1.1) rotate(20deg); }
+}
+
+/* Slow cinematic drift for live-wall photos */
+@keyframes ken-burns {
+  0% { transform: scale(1) translate(0, 0); }
+  100% { transform: scale(1.07) translate(0.6%, -0.6%); }
+}
+
+/* Soft breathing glow behind the live wall's current item */
+@keyframes wall-glow {
+  0%, 100% { opacity: 0.35; transform: scale(0.96); }
+  50% { opacity: 0.6; transform: scale(1.04); }
 }

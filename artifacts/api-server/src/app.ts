@@ -3,8 +3,10 @@ import cors from "cors";
 import pinoHttp from "pino-http";
 import router from "./routes";
 import { logger } from "./lib/logger";
+import { UPLOADS_DIR, ensureUploadsDir } from "./lib/storage";
 
 const app: Express = express();
+ensureUploadsDir();
 
 app.use(
   pinoHttp({
@@ -29,6 +31,10 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+app.use(
+  "/uploads",
+  express.static(UPLOADS_DIR, { maxAge: "1d", index: false }),
+);
 app.use("/api", router);
 
 export default app;

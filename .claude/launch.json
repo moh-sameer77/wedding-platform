@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "wedding-invitation",
+      "runtimeExecutable": "cmd",
+      "runtimeArgs": ["/c", "set PORT=5180 && set BASE_PATH=/ && pnpm --filter @workspace/wedding-invitation run dev"],
+      "port": 5180
+    }
+  ]
+}
