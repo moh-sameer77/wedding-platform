@@ -57,6 +57,7 @@ function ScannerScreen({
   const [result, setResult] = useState<ResolveResult | null>(null);
   const [manualToken, setManualToken] = useState('');
   const [count, setCount] = useState(1);
+  const [extraGuestNames, setExtraGuestNames] = useState<string[]>([]);
   const [needsOverride, setNeedsOverride] = useState(false);
   const [overrideReason, setOverrideReason] = useState('');
   const [overrideNote, setOverrideNote] = useState('');
@@ -70,6 +71,10 @@ function ScannerScreen({
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const resolvingRef = useRef(false);
+  // Mirrors "a result or success banner is on screen" so QR frames the
+  // (hidden, still-running) camera keeps decoding don't silently resolve
+  // again underneath the guard and reset the count/override state.
+  const showingOutcomeRef = useRef(false);
   const queryClient = useQueryClient();
 
   const recentQuery = useQuery({
@@ -79,17 +84,24 @@ function ScannerScreen({
   });
 
   const resolveToken = useCallback(async (raw: string) => {
-    if (resolvingRef.current) return;
+    if (resolvingRef.current || showingOutcomeRef.current) return;
     resolvingRef.current = true;
     setError(null);
     setSuccess(null);
     setNeedsOverride(false);
     setOverrideNote('');
+    setExtraGuestNames([]);
     try {
       const res = await api.get<ResolveResult>(
         `/checkin/resolve/${encodeURIComponent(raw)}`,
       );
       setResult(res);
+      showingOutcomeRef.current = true;
+      try {
+        scannerRef.current?.pause(true);
+      } catch {
+        // Not scanning (e.g. resolved via manual entry or image upload) — fine to ignore.
+      }
       if (res.status === 'valid') {
         setCount(Math.min(res.rsvpCount || res.remaining || 1, res.remaining || 1));
       }
@@ -219,32 +231,6 @@ function ScannerScreen({
     }
   };
 
-  // Camera QR scanning; guards can always fall back to manual entry.
-  useEffect(() => {
-    return;
-    const scanner = new Html5Qrcode('qr-reader');
-    scannerRef.current = scanner;
-    scanner
-      .start(
-        { facingMode: 'environment' },
-        { fps: 10, qrbox: { width: 240, height: 240 } },
-        (decoded) => {
-          resolveToken(decoded);
-        },
-        () => undefined,
-      )
-      .catch((err: unknown) => {
-        setCameraError(
-          err instanceof Error
-            ? err.message
-            : 'Camera unavailable — use manual entry below.',
-        );
-      });
-    return () => {
-      scanner.stop().catch(() => undefined);
-    };
-  }, [resolveToken]);
-
   useEffect(() => {
     return () => {
       void stopScanner();
@@ -258,7 +244,17 @@ function ScannerScreen({
     setNeedsOverride(false);
     setOverrideReason('');
     setOverrideNote('');
+    setExtraGuestNames([]);
     setManualToken('');
+    showingOutcomeRef.current = false;
+    if (cameraStatus === 'scanning') {
+      try {
+        scannerRef.current?.resume();
+      } catch {
+        // If the paused stream died in the background, the guard can hit
+        // "Start camera" — the manual/image-upload paths still work either way.
+      }
+    }
   };
 
   const checkIn = async (override = false) => {
@@ -266,6 +262,11 @@ function ScannerScreen({
     setBusy(true);
     setError(null);
     try {
+      const relevantNames = extraGuestNames.slice(0, extraCount).filter((n) => n.trim());
+      const namesNote = relevantNames.length
+        ? `Extra guest name(s): ${relevantNames.join(', ')}`
+        : '';
+      const combinedNote = [namesNote, overrideNote.trim()].filter(Boolean).join(' | ');
       const res = await api.post<ResolveResult & { isOverride: boolean }>(
         '/checkin',
         {
@@ -273,7 +274,7 @@ function ScannerScreen({
           count,
           override,
           overrideReason: override ? overrideReason : undefined,
-          overrideNote: override ? overrideNote : undefined,
+          overrideNote: override ? combinedNote : undefined,
         },
       );
       setSuccess(
@@ -281,6 +282,7 @@ function ScannerScreen({
       );
       setResult(null);
       setNeedsOverride(false);
+      setExtraGuestNames([]);
       queryClient.invalidateQueries({ queryKey: ['recent-checkins'] });
     } catch (err) {
       if (err instanceof ApiError && err.body['requiresOverride']) {
@@ -337,6 +339,9 @@ function ScannerScreen({
         );
     }
   };
+
+  const extraCount =
+    result?.status === 'valid' ? Math.max(0, count - (result.remaining ?? 0)) : 0;
 
   return (
     <div className="min-h-[100dvh] bg-[#2A1E23] text-[#F9F3F3] font-serif relative">
@@ -527,12 +532,37 @@ function ScannerScreen({
                       +
                     </button>
                   </div>
-                  {count > (result.remaining ?? 0) && (
+                  {extraCount > 0 && (
                     <p className="text-center text-amber-400 text-xs mt-2 font-bold uppercase tracking-wide">
                       ⚠ Exceeds remaining count — override required
                     </p>
                   )}
                 </div>
+
+                {extraCount > 0 && (
+                  <div className="space-y-2 border border-amber-500/40 bg-amber-500/5 p-4">
+                    <p className="text-center text-amber-400 text-xs uppercase tracking-wide font-bold">
+                      Name{extraCount > 1 ? 's' : ''} of the {extraCount} extra guest{extraCount > 1 ? 's' : ''}
+                    </p>
+                    {Array.from({ length: extraCount }).map((_, i) => (
+                      <input
+                        key={i}
+                        value={extraGuestNames[i] ?? ''}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          setExtraGuestNames((prev) => {
+                            const next = [...prev];
+                            while (next.length < extraCount) next.push('');
+                            next[i] = value;
+                            return next;
+                          });
+                        }}
+                        placeholder={`Extra guest ${i + 1} name`}
+                        className="w-full px-3 py-3 bg-white/10 border border-amber-500/40 text-sm focus:outline-none"
+                      />
+                    ))}
+                  </div>
+                )}
 
                 {needsOverride ? (
                   <div className="space-y-3 border border-amber-500/60 bg-amber-500/10 p-4">
@@ -553,7 +583,11 @@ function ScannerScreen({
                     />
                     <div className="flex gap-2">
                       <button
-                        disabled={busy || !overrideNote.trim()}
+                        disabled={
+                          busy ||
+                          !overrideNote.trim() ||
+                          extraGuestNames.slice(0, extraCount).some((n) => !n.trim())
+                        }
                         onClick={() => checkIn(true)}
                         className="flex-1 py-3.5 bg-amber-600 text-white uppercase tracking-widest text-xs font-bold disabled:opacity-50"
                       >

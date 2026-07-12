@@ -304,7 +304,7 @@ function CalendarMenu({ lang, onClose }: { lang: Lang; onClose: () => void }) {
         target="_blank"
         rel="noopener noreferrer"
         onClick={onClose}
-        className="flex items-center gap-3 px-5 py-3.5 hover:bg-[#D48A96]/8 transition-colors text-[#45383C]/80 text-xs uppercase tracking-widest font-serif border-b border-[#D48A96]/20"
+        className="flex items-center gap-3 px-5 py-3.5 hover:bg-[#D48A96]/8 transition-colors text-[#45383C]/80 text-sm uppercase tracking-widest font-serif border-b border-[#D48A96]/20"
       >
         <svg className="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
           <rect x="3" y="4" width="18" height="18" rx="2" />
@@ -314,7 +314,7 @@ function CalendarMenu({ lang, onClose }: { lang: Lang; onClose: () => void }) {
       </a>
       <button
         onClick={generateICS}
-        className="flex items-center gap-3 px-5 py-3.5 hover:bg-[#D48A96]/8 transition-colors text-[#45383C]/80 text-xs uppercase tracking-widest font-serif w-full text-left"
+        className="flex items-center gap-3 px-5 py-3.5 hover:bg-[#D48A96]/8 transition-colors text-[#45383C]/80 text-sm uppercase tracking-widest font-serif w-full text-left"
       >
         <svg className="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
           <path d="M12 2v13m0 0l-3-3m3 3l3-3M3 17v3a1 1 0 001 1h16a1 1 0 001-1v-3" />
@@ -339,7 +339,7 @@ function LangToggle({ lang }: { lang: Lang }) {
   return (
     <button
       onClick={switchLang}
-      className="fixed top-4 z-[60] px-3.5 py-1.5 bg-[#FDF9F8]/90 border border-[#D48A96]/45 text-[#8F4557] text-xs font-serif shadow-sm hover:bg-[#D48A96]/10 transition-colors backdrop-blur-sm"
+      className="fixed top-4 z-[60] px-3.5 py-1.5 bg-[#FDF9F8]/90 border border-[#D48A96]/45 text-[#8F4557] text-sm font-serif shadow-sm hover:bg-[#D48A96]/10 transition-colors backdrop-blur-sm"
       style={{ right: lang === 'ar' ? 'auto' : '1rem', left: lang === 'ar' ? '1rem' : 'auto' }}
       dir={lang === 'ar' ? 'ltr' : 'rtl'}
     >
@@ -392,6 +392,20 @@ export default function WeddingInvitation() {
   const topBg = backgrounds.top;
   const bottomBg = backgrounds.bottom;
   const tablesEnabled = event?.tablesEnabled ?? false;
+
+  // Warm the browser's image cache for the card's garland art the moment we
+  // know its URL, instead of only fetching it once the card mounts — the
+  // guest can open the envelope in well under a second.
+  useEffect(() => {
+    const garlandDefault = `${import.meta.env.BASE_URL}garland.svg`;
+    const urls = [topBg || garlandDefault, bottomBg || garlandDefault, centerBg].filter(
+      (url): url is string => Boolean(url),
+    );
+    for (const url of urls) {
+      const img = new Image();
+      img.src = url;
+    }
+  }, [topBg, bottomBg, centerBg]);
   const isConfirmed = invitation?.rsvpStatus === 'confirmed';
 
   usePageTitle(invitation ? `Invitation for ${invitation.guestName}` : undefined);
@@ -432,7 +446,7 @@ export default function WeddingInvitation() {
           <p className="font-script text-3xl sm:text-4xl text-[#D48A96] mb-4">
             {t(lang, 'invalidTitle')}
           </p>
-          <p className="text-sm sm:text-base text-[#45383C]/75 leading-relaxed">
+          <p className="text-base sm:text-lg text-[#45383C]/75 leading-relaxed">
             {t(lang, 'invalidBody')}
           </p>
         </div>
@@ -486,7 +500,7 @@ export default function WeddingInvitation() {
                 <div className="absolute inset-2 border-[0.5px] border-[#D48A96]/40 pointer-events-none" />
                 <div className="w-full h-full flex flex-col items-center justify-center gap-1.5" dir={rtl ? 'rtl' : 'ltr'}>
                   <p className="font-script text-3xl sm:text-4xl text-[#C4667A]">M &amp; R</p>
-                  <p className="text-[10px] sm:text-xs uppercase tracking-[0.3em] text-[#8F4557]/60">
+                  <p className="text-xs sm:text-sm uppercase tracking-[0.3em] text-[#8F4557]/60">
                     {t(lang, 'youAreInvited')}
                   </p>
                 </div>
@@ -531,7 +545,7 @@ export default function WeddingInvitation() {
                   transition={{ duration: 0.7, delay: isOpen ? 0 : 0.3 }}
                   dir={rtl ? 'rtl' : 'ltr'}
                 >
-                  <p className="text-[10px] sm:text-xs uppercase tracking-[0.3em] text-[#8F4557]/65 mb-0.5">
+                  <p className="text-xs sm:text-sm uppercase tracking-[0.3em] text-[#8F4557]/65 mb-0.5">
                     {firstName ? t(lang, 'especiallyFor') : t(lang, 'withLoveTo')}
                   </p>
                   <p className="font-script text-2xl sm:text-3xl text-[#8F4557] leading-normal max-w-full truncate">
@@ -625,7 +639,7 @@ export default function WeddingInvitation() {
 
             {!isOpen && (
               <motion.p
-                className="absolute bottom-8 sm:bottom-12 text-[#45383C]/50 font-serif tracking-[0.35em] text-[10px] sm:text-xs uppercase"
+                className="absolute bottom-8 sm:bottom-12 text-[#45383C]/50 font-serif tracking-[0.35em] text-xs sm:text-sm uppercase"
                 animate={{ opacity: cracking ? 0 : [0.35, 0.9, 0.35] }}
                 transition={{ repeat: cracking ? 0 : Infinity, duration: 3 }}
                 dir={rtl ? 'rtl' : 'ltr'}
@@ -688,11 +702,11 @@ export default function WeddingInvitation() {
                               className="flex items-center gap-3 sm:gap-4 text-center mt-8 sm:mt-0"
                               initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.4 }} transition={{ duration: 0.9, ease: 'easeOut' }}
                             >
-                              <span className="text-[#D48A96] text-sm">✦</span>
-                              <p className="tracking-[0.22em] text-[10px] sm:text-xs uppercase text-[#45383C]/65 font-medium">
+                              <span className="text-[#D48A96] text-base">✦</span>
+                              <p className="tracking-[0.22em] text-xs sm:text-sm uppercase text-[#45383C]/65 font-medium">
                                 {t(lang, 'togetherWithFamilies')}
                               </p>
-                              <span className="text-[#D48A96] text-sm">✦</span>
+                              <span className="text-[#D48A96] text-base">✦</span>
                             </motion.div>
 
                             <motion.div
@@ -727,7 +741,7 @@ export default function WeddingInvitation() {
                               className="text-center max-w-sm mx-auto"
                               initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.4 }} transition={{ duration: 0.9, ease: 'easeOut' }}
                             >
-                              <p className="text-sm sm:text-base text-[#45383C]/75 leading-relaxed italic font-serif px-4">
+                              <p className="text-base sm:text-lg text-[#45383C]/75 leading-relaxed italic font-serif px-4">
                                 {t(lang, 'requestHonor').split('\n').map((line, i) => (
                                   <React.Fragment key={i}>
                                     {i > 0 && <br />}
@@ -739,7 +753,7 @@ export default function WeddingInvitation() {
                               <p
                                 dir={rtl ? 'ltr' : 'rtl'}
                                 lang={rtl ? 'en' : 'ar'}
-                                className={`mt-4 text-sm sm:text-base text-[#B25A6C]/85 leading-loose px-4 ${rtl ? 'italic' : ''}`}
+                                className={`mt-4 text-base sm:text-lg text-[#B25A6C]/85 leading-loose px-4 ${rtl ? 'italic' : ''}`}
                               >
                                 {t(rtl ? 'en' : 'ar', 'blessing')}
                               </p>
@@ -757,13 +771,13 @@ export default function WeddingInvitation() {
                           >
                             <div className="inline-flex flex-col items-center gap-1.5 px-8 py-4 border-[0.5px] border-[#D48A96]/50 bg-[#FDF9F8] shadow-sm relative">
                               <div className="absolute inset-1 border-[0.5px] border-dashed border-[#D48A96]/25 pointer-events-none" />
-                              <p className="text-[10px] sm:text-xs uppercase tracking-[0.22em] text-[#D48A96] font-medium">
+                              <p className="text-xs sm:text-sm uppercase tracking-[0.22em] text-[#D48A96] font-medium">
                                 {t(lang, 'especiallyFor')}
                               </p>
                               <p className="font-script text-2xl sm:text-3xl text-[#45383C] leading-normal">
                                 {invitation.guestName}
                               </p>
-                              <p className="text-[10px] sm:text-xs text-[#45383C]/60 tracking-wide">
+                              <p className="text-xs sm:text-sm text-[#45383C]/60 tracking-wide">
                                 {t(lang, 'seatsReserved', {
                                   n: invitation.allowedCount,
                                   seats:
@@ -784,7 +798,7 @@ export default function WeddingInvitation() {
                             initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.4 }} transition={{ duration: 0.9, ease: 'easeOut' }}
                           >
                             <div className="h-[0.5px] flex-1 bg-gradient-to-r from-transparent via-[#D48A96]/60 to-[#D48A96]/60" />
-                            <p className="text-[10px] sm:text-xs uppercase tracking-[0.22em] text-[#45383C]/65 font-serif whitespace-nowrap">
+                            <p className="text-xs sm:text-sm uppercase tracking-[0.22em] text-[#45383C]/65 font-serif whitespace-nowrap">
                               {t(lang, 'dateLine')}
                             </p>
                             <div className="h-[0.5px] flex-1 bg-gradient-to-l from-transparent via-[#D48A96]/60 to-[#D48A96]/60" />
@@ -805,13 +819,10 @@ export default function WeddingInvitation() {
                                   {t(lang, 'venueName')}
                                 </p>
                                 <div className="h-[0.5px] w-10 bg-[#D48A96] mx-auto mb-2.5" />
-                                <p className="text-sm sm:text-base text-[#45383C]/75 italic tracking-wide">
+                                <p className="text-base sm:text-lg text-[#45383C]/75 italic tracking-wide">
                                   {t(lang, 'venueTime')}
                                 </p>
-                                <p className="text-[10px] sm:text-xs text-[#45383C]/55 mt-2.5 uppercase tracking-[0.22em]">
-                                  {t(lang, 'formalAttire')}
-                                </p>
-                                <p className="text-[10px] sm:text-xs text-[#B25A6C]/75 mt-2 italic leading-relaxed max-w-[230px] mx-auto">
+                                <p className="text-xs sm:text-sm text-[#B25A6C]/75 mt-2 italic leading-relaxed max-w-[230px] mx-auto">
                                   {t(lang, 'noChildren')}
                                 </p>
                               </div>
@@ -823,7 +834,7 @@ export default function WeddingInvitation() {
                                 href={MAPS_URL}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="flex-1 flex items-center justify-center gap-2 py-2.5 sm:py-3 border border-[#D48A96]/70 bg-transparent hover:bg-[#D48A96]/8 transition-colors text-[#45383C]/75 text-[10px] sm:text-xs uppercase tracking-widest font-serif"
+                                className="flex-1 flex items-center justify-center gap-2 py-2.5 sm:py-3 border border-[#D48A96]/70 bg-transparent hover:bg-[#D48A96]/8 transition-colors text-[#45383C]/75 text-xs sm:text-sm uppercase tracking-widest font-serif"
                               >
                                 <svg className="w-3.5 h-3.5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                                   <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" />
@@ -835,7 +846,7 @@ export default function WeddingInvitation() {
                               <div className="flex-1 relative">
                                 <button
                                   onClick={() => setShowCalendar((v) => !v)}
-                                  className="w-full flex items-center justify-center gap-2 py-2.5 sm:py-3 border border-[#D48A96]/70 bg-transparent hover:bg-[#D48A96]/8 transition-colors text-[#45383C]/75 text-[10px] sm:text-xs uppercase tracking-widest font-serif"
+                                  className="w-full flex items-center justify-center gap-2 py-2.5 sm:py-3 border border-[#D48A96]/70 bg-transparent hover:bg-[#D48A96]/8 transition-colors text-[#45383C]/75 text-xs sm:text-sm uppercase tracking-widest font-serif"
                                 >
                                   <svg className="w-3.5 h-3.5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                                     <rect x="3" y="4" width="18" height="18" rx="2" />
@@ -878,12 +889,12 @@ export default function WeddingInvitation() {
                                 initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.4 }} transition={{ duration: 0.9, ease: 'easeOut' }}
                               >
                                 <div className="inline-flex items-center gap-3 px-8 py-3.5 border-[0.5px] border-[#D48A96]/50 bg-[#FDF9F8] shadow-sm">
-                                  <span className="text-[#D48A96] text-sm">✦</span>
-                                  <p className="text-[10px] sm:text-xs uppercase tracking-[0.22em] text-[#45383C]/70">
+                                  <span className="text-[#D48A96] text-base">✦</span>
+                                  <p className="text-xs sm:text-sm uppercase tracking-[0.22em] text-[#45383C]/70">
                                     {t(lang, 'yourTable')}&nbsp;·&nbsp;
                                     <span className="text-[#45383C] font-semibold">{invitation.tableName}</span>
                                   </p>
-                                  <span className="text-[#D48A96] text-sm">✦</span>
+                                  <span className="text-[#D48A96] text-base">✦</span>
                                 </div>
                               </motion.div>
                             )}
@@ -979,14 +990,14 @@ function GuestBottomNav({
                 selected ? 'text-[#8F4557]' : 'text-[#8F7A67]/75 hover:text-[#8F4557]'
               }`}
             >
-              <span className={`flex h-9 w-9 items-center justify-center rounded-full border text-xs font-semibold transition-all ${
+              <span className={`flex h-9 w-9 items-center justify-center rounded-full border text-sm font-semibold transition-all ${
                 selected
                   ? 'border-white/70 bg-white/70 text-[#8F4557] shadow-[0_8px_24px_rgba(178,90,108,0.22)] scale-105'
                   : 'border-white/45 bg-white/35 group-hover:bg-white/55'
               }`}>
                 {item.icon}
               </span>
-              <span className="truncate text-[9px] uppercase tracking-[0.12em]">
+              <span className="truncate text-[10px] uppercase tracking-[0.12em]">
                 {item.label}
               </span>
               {selected && (
@@ -1077,7 +1088,7 @@ function GuestPassSection({
   const checkedInCount = invitation.checkedIn ?? 0;
   return (
     <section className="mx-auto max-w-md text-center">
-      <p className="text-[10px] uppercase tracking-[0.28em] text-[#D48A96]">
+      <p className="text-xs uppercase tracking-[0.28em] text-[#D48A96]">
         {lang === 'ar' ? 'بطاقة الدخول' : 'Entrance pass'}
       </p>
       <h2 className="font-script text-4xl text-[#45383C] mt-2">
@@ -1091,25 +1102,25 @@ function GuestPassSection({
           className="relative h-48 w-48"
         />
       </div>
-      <p className="mx-auto mt-4 max-w-sm text-sm text-[#45383C]/70 italic">
+      <p className="mx-auto mt-4 max-w-sm text-base text-[#45383C]/70 italic">
         {lang === 'ar'
           ? 'اعرضوا هذا الرمز عند المدخل لتسجيل حضوركم.'
           : 'Show this QR at the entrance so the guard can check you in.'}
       </p>
-      <p className="mt-2 text-[10px] uppercase tracking-[0.22em] text-[#45383C]/50">
+      <p className="mt-2 text-xs uppercase tracking-[0.22em] text-[#45383C]/50">
         {lang === 'ar' ? `عدد الحضور المؤكد: ${invitation.rsvpCount ?? invitation.allowedCount}` : `${invitation.rsvpCount ?? invitation.allowedCount} confirmed guest(s)`}
       </p>
       {checkedInCount > 0 && (
         <div className="mt-5 rounded-[1.5rem] border border-emerald-200 bg-emerald-50/80 px-5 py-4 text-emerald-900 shadow-sm text-center">
-          <p className="text-[10px] uppercase tracking-[0.22em] font-semibold">
+          <p className="text-xs uppercase tracking-[0.22em] font-semibold">
             {lang === 'ar' ? 'أهلاً وسهلاً' : 'Welcome'}
           </p>
-          <p className="mt-2 text-sm leading-relaxed">
+          <p className="mt-2 text-base leading-relaxed">
             {lang === 'ar'
               ? 'تم تسجيل حضوركم بنجاح. نتمنى لكم أمسية جميلة وممتعة معنا.'
               : 'Your check-in is complete. We are glad to welcome you to the celebration.'}
           </p>
-          <p className="mt-2 text-xs opacity-80">
+          <p className="mt-2 text-sm opacity-80">
             {lang === 'ar'
               ? `عدد المسجلين حتى الآن: ${checkedInCount}`
               : `Checked in count: ${checkedInCount}`}
@@ -1167,7 +1178,7 @@ function GuestMemorySection({
     return (
       <section className="mx-auto max-w-md">
         <div className="text-center mb-5">
-          <p className="text-[10px] uppercase tracking-[0.28em] text-[#D48A96]">
+          <p className="text-xs uppercase tracking-[0.28em] text-[#D48A96]">
             {lang === 'ar' ? 'شاركوا اللحظة' : 'Share the moment'}
           </p>
           <h2 className="font-script text-4xl text-[#45383C] mt-2">
@@ -1175,15 +1186,15 @@ function GuestMemorySection({
           </h2>
         </div>
         <div className="rounded-[1.5rem] border border-[#D48A96]/25 bg-[#FDF9F8]/90 px-5 py-8 text-center shadow-sm">
-          <p className="text-[10px] uppercase tracking-[0.22em] text-[#B25A6C]">
+          <p className="text-xs uppercase tracking-[0.22em] text-[#B25A6C]">
             {lang === 'ar' ? 'الرفع متوقف حالياً' : 'Uploads are locked'}
           </p>
-          <p className="mt-3 text-sm text-[#45383C]/75 leading-relaxed">
+          <p className="mt-3 text-base text-[#45383C]/75 leading-relaxed">
             {lang === 'ar'
               ? 'هذا القسم متوقف مؤقتاً من لوحة الإدارة. ما زال بإمكانكم إرسال التهاني من سجل التهاني.'
               : 'This section is temporarily locked from the admin panel. You can still send wishes through the guestbook.'}
           </p>
-          <p className="mt-3 text-xs uppercase tracking-[0.18em] text-[#45383C]/45">
+          <p className="mt-3 text-sm uppercase tracking-[0.18em] text-[#45383C]/45">
             {lang === 'ar'
               ? `الحد الحالي لكل ضيف: ${maxUploadsPerGuest}`
               : `Current limit per guest: ${maxUploadsPerGuest}`}
@@ -1196,18 +1207,18 @@ function GuestMemorySection({
   return (
     <section className="mx-auto max-w-md">
       <div className="text-center mb-5">
-        <p className="text-[10px] uppercase tracking-[0.28em] text-[#D48A96]">
+        <p className="text-xs uppercase tracking-[0.28em] text-[#D48A96]">
           {lang === 'ar' ? 'شاركوا اللحظة' : 'Share the moment'}
         </p>
         <h2 className="font-script text-4xl text-[#45383C] mt-2">
           {lang === 'ar' ? 'الذكريات' : 'Memories'}
         </h2>
-        <p className="mt-3 text-sm text-[#45383C]/70 italic">
+        <p className="mt-3 text-base text-[#45383C]/70 italic">
           {lang === 'ar'
             ? 'ارفعوا صورة أو فيديو قصير من هنا ليظهر مباشرة في شاشة الذكريات الحية.'
             : 'Upload a photo or short video here to show it on the live wall.'}
         </p>
-        <p className="mt-2 text-[10px] uppercase tracking-[0.18em] text-[#45383C]/45">
+        <p className="mt-2 text-xs uppercase tracking-[0.18em] text-[#45383C]/45">
           {lang === 'ar'
             ? `يمكن لكل ضيف إرسال حتى ${maxUploadsPerGuest} عناصر`
             : `Each guest can send up to ${maxUploadsPerGuest} items`}
@@ -1215,22 +1226,22 @@ function GuestMemorySection({
       </div>
       <div className="border border-[#D48A96]/35 bg-[#FDF9F8]/85 p-5 shadow-sm space-y-3">
         {sent && (
-          <p className="text-sm text-emerald-700 text-center">
+          <p className="text-base text-emerald-700 text-center">
             {lang === 'ar' ? 'شكراً لكم، تمت مشاركة الذكرى مع شاشة الذكريات الحية.' : 'Thank you. Your memory was shared to the live wall.'}
           </p>
         )}
         <label className="block cursor-pointer rounded-sm border-2 border-dashed border-[#D48A96]/45 bg-white/70 px-4 py-5 text-center hover:bg-[#D48A96]/5 transition-colors">
-          <span className="block text-[10px] uppercase tracking-[0.22em] text-[#B25A6C]">
+          <span className="block text-xs uppercase tracking-[0.22em] text-[#B25A6C]">
             {lang === 'ar' ? 'رفع للعرض على الشاشة' : 'Upload for live wall'}
           </span>
-          <span className="mt-2 block text-sm text-[#45383C]">
+          <span className="mt-2 block text-base text-[#45383C]">
             {file
               ? file.name
               : lang === 'ar'
                 ? 'اختاروا صورة أو فيديو قصير'
                 : 'Choose a photo or short video'}
           </span>
-          <span className="mt-1 block text-xs text-[#45383C]/55">
+          <span className="mt-1 block text-sm text-[#45383C]/55">
             {lang === 'ar'
               ? 'الملفات المدعومة: صور أو فيديو قصير'
               : 'Supported: images or short video clips'}
@@ -1246,18 +1257,18 @@ function GuestMemorySection({
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder={lang === 'ar' ? 'الاسم' : 'Name'}
-          className="w-full px-3 py-2.5 border border-[#D48A96]/30 bg-white/80 text-sm focus:outline-none focus:border-[#B25A6C]"
+          className="w-full px-3 py-2.5 border border-[#D48A96]/30 bg-white/80 text-base focus:outline-none focus:border-[#B25A6C]"
         />
         <input
           value={caption}
           onChange={(e) => setCaption(e.target.value)}
           placeholder={lang === 'ar' ? 'تعليق قصير اختياري' : 'Optional short caption'}
-          className="w-full px-3 py-2.5 border border-[#D48A96]/30 bg-white/80 text-sm focus:outline-none focus:border-[#B25A6C]"
+          className="w-full px-3 py-2.5 border border-[#D48A96]/30 bg-white/80 text-base focus:outline-none focus:border-[#B25A6C]"
         />
         <button
           disabled={!file || busy}
           onClick={submit}
-          className="w-full py-3.5 bg-gradient-to-br from-[#D48A96] to-[#B25A6C] text-[#F9F3F3] uppercase tracking-widest text-xs font-semibold disabled:opacity-50"
+          className="w-full py-3.5 bg-gradient-to-br from-[#D48A96] to-[#B25A6C] text-[#F9F3F3] uppercase tracking-widest text-sm font-semibold disabled:opacity-50"
         >
           {busy ? (lang === 'ar' ? 'جارٍ الإرسال...' : 'Sending...') : (lang === 'ar' ? 'إرسال ذكرى' : 'Send memory')}
         </button>
@@ -1301,13 +1312,13 @@ function GuestbookSection({
   return (
     <section className="mx-auto max-w-md">
       <div className="text-center mb-5">
-        <p className="text-[10px] uppercase tracking-[0.28em] text-[#D48A96]">
+        <p className="text-xs uppercase tracking-[0.28em] text-[#D48A96]">
           {lang === 'ar' ? 'كلمة للعروسين' : 'A wish for the couple'}
         </p>
         <h2 className="font-script text-4xl text-[#45383C] mt-2">
           {lang === 'ar' ? 'سجل التهاني' : 'Guestbook'}
         </h2>
-        <p className="mt-3 text-sm text-[#45383C]/70 italic">
+        <p className="mt-3 text-base text-[#45383C]/70 italic">
           {lang === 'ar'
             ? 'اكتبوا تهنئتكم هنا لتظهر ضمن شاشة الذكريات الحية.'
             : 'Write your wish here to have it shown on the live wall.'}
@@ -1319,18 +1330,18 @@ function GuestbookSection({
           value={text}
           onChange={(e) => setText(e.target.value)}
           placeholder={lang === 'ar' ? 'اكتبوا تهنئتكم هنا...' : 'Write your wish here...'}
-          className="w-full px-3 py-2.5 border border-[#D48A96]/30 bg-white/80 text-sm focus:outline-none focus:border-[#B25A6C]"
+          className="w-full px-3 py-2.5 border border-[#D48A96]/30 bg-white/80 text-base focus:outline-none focus:border-[#B25A6C]"
         />
         <input
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder={lang === 'ar' ? 'الاسم' : 'Name'}
-          className="w-full px-3 py-2.5 border border-[#D48A96]/30 bg-white/80 text-sm focus:outline-none focus:border-[#B25A6C]"
+          className="w-full px-3 py-2.5 border border-[#D48A96]/30 bg-white/80 text-base focus:outline-none focus:border-[#B25A6C]"
         />
         <button
           disabled={!text.trim() || busy}
           onClick={submit}
-          className="w-full py-3.5 bg-gradient-to-br from-[#D48A96] to-[#B25A6C] text-[#F9F3F3] uppercase tracking-widest text-xs font-semibold disabled:opacity-50"
+          className="w-full py-3.5 bg-gradient-to-br from-[#D48A96] to-[#B25A6C] text-[#F9F3F3] uppercase tracking-widest text-sm font-semibold disabled:opacity-50"
         >
           {busy ? (lang === 'ar' ? 'جارٍ الإرسال...' : 'Sending...') : (lang === 'ar' ? 'إرسال التهنئة' : 'Send wish')}
         </button>
@@ -1445,7 +1456,7 @@ function RsvpSection({
                 <p className="font-script text-2xl sm:text-3xl text-[#D48A96] mb-2">
                   {t(lang, 'joyfullyAccepted')}
                 </p>
-                <p className="text-sm sm:text-base text-[#45383C]/75 italic">
+                <p className="text-base sm:text-lg text-[#45383C]/75 italic">
                   {t(lang, 'guestsConfirmed', {
                     n: invitation!.rsvpCount ?? 0,
                     guests:
@@ -1460,7 +1471,7 @@ function RsvpSection({
                 <p className="font-script text-2xl sm:text-3xl text-[#45383C]/70 mb-2">
                   {t(lang, 'regretfullyDeclined')}
                 </p>
-                <p className="text-sm sm:text-base text-[#45383C]/75 italic">
+                <p className="text-base sm:text-lg text-[#45383C]/75 italic">
                   {t(lang, 'dearlyMissed')}
                 </p>
               </>
@@ -1468,14 +1479,14 @@ function RsvpSection({
           </div>
           <button
             onClick={() => setEditing(true)}
-            className="text-[10px] sm:text-xs uppercase tracking-[0.22em] text-[#B25A6C] underline underline-offset-4 hover:text-[#8F4557] transition-colors"
+            className="text-xs sm:text-sm uppercase tracking-[0.22em] text-[#B25A6C] underline underline-offset-4 hover:text-[#8F4557] transition-colors"
           >
             {t(lang, 'changeResponse')}
           </button>
         </div>
       ) : choosingCount && invitation ? (
         <div className="space-y-5">
-          <p className="text-sm sm:text-base text-[#45383C]/75 italic font-serif">
+          <p className="text-base sm:text-lg text-[#45383C]/75 italic font-serif">
             {t(lang, 'howMany')}
           </p>
           <div className="flex items-center justify-center gap-5">
@@ -1495,21 +1506,21 @@ function RsvpSection({
               +
             </button>
           </div>
-          <p className="text-[10px] sm:text-xs uppercase tracking-[0.22em] text-[#45383C]/50">
+          <p className="text-xs sm:text-sm uppercase tracking-[0.22em] text-[#45383C]/50">
             {t(lang, 'upToGuests', { n: invitation.allowedCount })}
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <button
               disabled={rsvpMutation.isPending}
               onClick={() => rsvpMutation.mutate({ status: 'confirmed', count })}
-              className="group relative px-8 py-3.5 bg-gradient-to-br from-[#D48A96] to-[#B25A6C] text-[#F9F3F3] uppercase tracking-widest text-[10px] sm:text-xs font-semibold shadow-lg transition-all hover:-translate-y-0.5 hover:shadow-xl disabled:opacity-60"
+              className="group relative px-8 py-3.5 bg-gradient-to-br from-[#D48A96] to-[#B25A6C] text-[#F9F3F3] uppercase tracking-widest text-xs sm:text-sm font-semibold shadow-lg transition-all hover:-translate-y-0.5 hover:shadow-xl disabled:opacity-60"
             >
               <div className="absolute inset-[3px] border-[0.5px] border-[#F9F3F3]/40 pointer-events-none" />
               {rsvpMutation.isPending ? t(lang, 'sending') : t(lang, 'confirmAttendance')}
             </button>
             <button
               onClick={() => setChoosingCount(false)}
-              className="px-8 py-3.5 text-[#45383C]/60 border border-[#D48A96]/40 uppercase tracking-widest text-[10px] sm:text-xs hover:bg-[#D48A96]/5 transition-colors"
+              className="px-8 py-3.5 text-[#45383C]/60 border border-[#D48A96]/40 uppercase tracking-widest text-xs sm:text-sm hover:bg-[#D48A96]/5 transition-colors"
             >
               {t(lang, 'back')}
             </button>
@@ -1517,14 +1528,14 @@ function RsvpSection({
         </div>
       ) : (
         <>
-          <p className="text-sm sm:text-base text-[#45383C]/75 italic mb-5 sm:mb-7 font-serif">
+          <p className="text-base sm:text-lg text-[#45383C]/75 italic mb-5 sm:mb-7 font-serif">
             {t(lang, 'willYouJoin')}
           </p>
           <div className="flex flex-col sm:flex-row gap-3 sm:gap-5 justify-center w-full px-4">
             <button
               disabled={rsvpMutation.isPending}
               onClick={handleAccept}
-              className="group relative px-6 sm:px-8 py-3 sm:py-4 bg-gradient-to-br from-[#D48A96] to-[#B25A6C] text-[#F9F3F3] rounded-none uppercase tracking-widest text-[10px] sm:text-xs font-semibold shadow-lg transition-all hover:-translate-y-0.5 hover:shadow-xl w-full sm:w-auto disabled:opacity-60"
+              className="group relative px-6 sm:px-8 py-3 sm:py-4 bg-gradient-to-br from-[#D48A96] to-[#B25A6C] text-[#F9F3F3] rounded-none uppercase tracking-widest text-xs sm:text-sm font-semibold shadow-lg transition-all hover:-translate-y-0.5 hover:shadow-xl w-full sm:w-auto disabled:opacity-60"
             >
               <div className="absolute inset-[3px] border-[0.5px] border-[#F9F3F3]/40 pointer-events-none transition-transform group-hover:scale-[0.98]" />
               {t(lang, 'joyfullyAccepts')}
@@ -1532,7 +1543,7 @@ function RsvpSection({
             <button
               disabled={rsvpMutation.isPending}
               onClick={handleDecline}
-              className="group relative px-6 sm:px-8 py-3 sm:py-4 bg-transparent text-[#B25A6C] border border-[#D48A96] hover:bg-[#D48A96]/5 transition-all uppercase tracking-widest text-[10px] sm:text-xs font-semibold w-full sm:w-auto shadow-sm disabled:opacity-60"
+              className="group relative px-6 sm:px-8 py-3 sm:py-4 bg-transparent text-[#B25A6C] border border-[#D48A96] hover:bg-[#D48A96]/5 transition-all uppercase tracking-widest text-xs sm:text-sm font-semibold w-full sm:w-auto shadow-sm disabled:opacity-60"
             >
               <div className="absolute inset-[3px] border-[0.5px] border-[#D48A96]/30 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity" />
               {t(lang, 'regretfullyDeclines')}
@@ -1579,11 +1590,11 @@ function NuqootSection({ lang }: { lang: Lang }) {
       <p
         dir={rtl ? 'ltr' : 'rtl'}
         lang={rtl ? 'en' : 'ar'}
-        className="text-sm sm:text-base text-[#D48A96] mb-4"
+        className="text-base sm:text-lg text-[#D48A96] mb-4"
       >
         {t(lang, 'nuqootSub')}
       </p>
-      <p className="text-sm sm:text-base text-[#45383C]/70 italic font-serif max-w-sm mx-auto leading-relaxed mb-6">
+      <p className="text-base sm:text-lg text-[#45383C]/70 italic font-serif max-w-sm mx-auto leading-relaxed mb-6">
         {t(lang, 'nuqootBody')}
       </p>
 
@@ -1596,7 +1607,7 @@ function NuqootSection({ lang }: { lang: Lang }) {
             <path d="M5 10 v7 M9.5 10 v7 M14.5 10 v7 M19 10 v7" />
             <path d="M3 20 h18" />
           </svg>
-          <p className="text-[10px] sm:text-xs uppercase tracking-[0.22em] text-[#45383C]/60">
+          <p className="text-xs sm:text-sm uppercase tracking-[0.22em] text-[#45383C]/60">
             {t(lang, 'cliqAlias')}
           </p>
         </div>
@@ -1605,12 +1616,12 @@ function NuqootSection({ lang }: { lang: Lang }) {
         </p>
         <button
           onClick={copyAlias}
-          className="group relative mt-1 px-7 py-2.5 bg-gradient-to-br from-[#D48A96] to-[#B25A6C] text-[#F9F3F3] uppercase tracking-widest text-[10px] sm:text-xs font-semibold shadow-md transition-all hover:-translate-y-0.5 hover:shadow-lg"
+          className="group relative mt-1 px-7 py-2.5 bg-gradient-to-br from-[#D48A96] to-[#B25A6C] text-[#F9F3F3] uppercase tracking-widest text-xs sm:text-sm font-semibold shadow-md transition-all hover:-translate-y-0.5 hover:shadow-lg"
         >
           <div className="absolute inset-[3px] border-[0.5px] border-[#F9F3F3]/40 pointer-events-none" />
           {copied ? t(lang, 'copied') : t(lang, 'copyAlias')}
         </button>
-        <p className="text-[10px] sm:text-xs text-[#45383C]/50 tracking-wide">
+        <p className="text-xs sm:text-sm text-[#45383C]/50 tracking-wide">
           {t(lang, 'cliqNote')}
         </p>
       </div>
@@ -1645,7 +1656,7 @@ function CountdownTimer({ lang }: { lang: Lang }) {
     >
       <div className="flex items-center justify-center gap-2 sm:gap-4 mb-6 sm:mb-8">
         <div className="h-[0.5px] bg-gradient-to-r from-transparent via-[#D48A96]/50 to-transparent flex-1 max-w-[80px] sm:max-w-[110px]" />
-        <p className="tracking-[0.22em] text-[10px] sm:text-xs uppercase text-[#D48A96] font-medium font-serif">
+        <p className="tracking-[0.22em] text-xs sm:text-sm uppercase text-[#D48A96] font-medium font-serif">
           {t(lang, 'countingDown')}
         </p>
         <div className="h-[0.5px] bg-gradient-to-r from-transparent via-[#D48A96]/50 to-transparent flex-1 max-w-[80px] sm:max-w-[110px]" />
@@ -1687,7 +1698,7 @@ function CountdownTimer({ lang }: { lang: Lang }) {
                 </AnimatePresence>
               </div>
             </div>
-            <span className="text-[10px] sm:text-xs uppercase tracking-[0.22em] text-[#45383C]/55 font-serif">{label}</span>
+            <span className="text-xs sm:text-sm uppercase tracking-[0.22em] text-[#45383C]/55 font-serif">{label}</span>
           </motion.div>
         ))}
       </div>

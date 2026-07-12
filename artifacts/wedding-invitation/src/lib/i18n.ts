@@ -13,7 +13,8 @@ const STRINGS = {
   especiallyFor: { en: 'Especially for', ar: 'دعوة خاصة إلى' },
   withLoveTo: { en: 'With love, to', ar: 'بكل الحب، إلى' },
   belovedGuests: { en: 'Our Beloved Guests', ar: 'ضيوفنا الأعزاء' },
-  dearName: { en: 'Dear {name}', ar: 'عزيزنا {name}' },
+  // 'إلى' has no gender agreement, unlike 'عزيزنا' (masc.) — works for any guest name.
+  dearName: { en: 'Dear {name}', ar: 'إلى {name}' },
   youAreInvited: { en: 'You are invited', ar: 'أنتم مدعوون' },
 
   // Header
@@ -44,10 +45,9 @@ const STRINGS = {
   dateLine: { en: 'Saturday · July 25 · 2026', ar: 'السبت · ٢٥ تموز · ٢٠٢٦' },
   venueName: { en: 'Tal Pine', ar: 'تل الصنوبر' },
   venueTime: { en: 'At 7:00 in the evening', ar: 'في تمام الساعة السابعة مساءً' },
-  formalAttire: { en: 'Formal attire requested', ar: 'يرجى الالتزام باللباس الرسمي' },
   noChildren: {
-    en: 'With love for your little ones, and in line with the restaurant policy, this evening will be an adults-only celebration.',
-    ar: 'مع محبتنا الكبيرة لصغاركم، ووفقاً لسياسة المطعم، ستكون هذه الأمسية للكبار فقط.',
+    en: "With love for your little ones, and in line with the venue's policy, this evening will be an adults-only celebration.",
+    ar: 'مع محبتنا الكبيرة لصغاركم، ووفقاً لسياسة المكان، ستكون هذه الأمسية للكبار فقط.',
   },
   getDirections: { en: 'Get directions', ar: 'الموقع على الخريطة' },
   addToCalendar: { en: 'Add to calendar', ar: 'أضيفوا الموعد للتقويم' },
@@ -219,7 +219,6 @@ export const EDITABLE_TEXTS: { key: StringKey; label: string }[] = [
   { key: 'dateLine', label: 'Date line' },
   { key: 'venueName', label: 'Venue name' },
   { key: 'venueTime', label: 'Time line' },
-  { key: 'formalAttire', label: 'Attire note' },
   { key: 'noChildren', label: 'Adults-only note' },
   { key: 'countingDown', label: 'Countdown caption' },
   { key: 'willYouJoin', label: 'RSVP question' },

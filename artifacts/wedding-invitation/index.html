@@ -17,6 +17,9 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Warm the browser cache for the default garland art so it's already
+         decoded by the time the envelope opens, instead of popping in late. -->
+    <link rel="preload" as="image" href="/garland.svg" fetchpriority="high" />
   </head>
   <body>
     <div id="root"></div>
