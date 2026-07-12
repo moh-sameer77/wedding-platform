@@ -26,6 +26,10 @@ export const invitationsTable = pgTable("invitations", {
   tableId: integer("table_id").references(() => tablesTable.id),
   token: text("token").notNull().unique(),
   status: text("status").notNull().default("active"), // active | cancelled
+  createdByUserId: integer("created_by_user_id").references(
+    () => usersTable.id,
+    { onDelete: "set null" },
+  ),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
@@ -42,6 +46,7 @@ export const checkinsTable = pgTable("checkins", {
   count: integer("count").notNull(),
   scannedByUserId: integer("scanned_by_user_id").references(
     () => usersTable.id,
+    { onDelete: "set null" },
   ),
   isOverride: boolean("is_override").notNull().default(false),
   notes: text("notes"),

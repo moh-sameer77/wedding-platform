@@ -37,6 +37,10 @@ router.post("/auth/login", async (req, res, next) => {
       res.status(401).json({ error: "Invalid username or password" });
       return;
     }
+    if (!user.active) {
+      res.status(403).json({ error: "This account has been deactivated" });
+      return;
+    }
     const token = generateToken(24);
     await db.insert(sessionsTable).values({
       token,

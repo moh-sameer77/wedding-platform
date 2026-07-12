@@ -2,12 +2,15 @@ import { useEffect, useRef, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import LoginGate from '@/components/LoginGate';
 import { useToast } from '@/hooks/use-toast';
-import { api, getSessionToken, publicUrl } from '@/lib/api';
+import { api, getSessionToken, getSessionUser, publicUrl } from '@/lib/api';
 import { usePageTitle } from '@/hooks/use-page-title';
 import {
   DEFAULT_SECTIONS,
+  DEFAULT_WHATSAPP_MESSAGE,
   EDITABLE_TEXTS,
   SECTION_LABELS,
+  TEXT_GROUPS,
+  defaultText,
   resolveSections,
   type InvitationConfig,
   type SectionId,
@@ -57,6 +60,17 @@ interface AdminInvitation {
   token: string;
   status: string;
   checkedIn: number;
+  createdByUserId: number | null;
+  createdByName: string | null;
+}
+
+interface AdminUser {
+  id: number;
+  username: string;
+  name: string;
+  role: 'admin' | 'guard' | 'moderator';
+  active: boolean;
+  createdAt: string;
 }
 
 interface AdminTable {
@@ -97,7 +111,7 @@ interface AuditCheckin {
   scannedBy: string | null;
 }
 
-type Tab = 'overview' | 'guests' | 'tables' | 'moderation' | 'settings';
+type Tab = 'overview' | 'guests' | 'tables' | 'moderation' | 'team' | 'settings';
 
 // ---------- page ----------
 
@@ -119,6 +133,7 @@ const TABS: { id: Tab; label: string }[] = [
   { id: 'guests', label: 'Guests & RSVP' },
   { id: 'tables', label: 'Tables' },
   { id: 'moderation', label: 'Moderation' },
+  { id: 'team', label: 'Team' },
   { id: 'settings', label: 'Settings' },
 ];
 
@@ -209,9 +224,10 @@ function AdminScreen({
 
       <main className="max-w-6xl mx-auto p-4 sm:p-6">
         {tab === 'overview' && <OverviewTab data={dashboardQuery.data} />}
-        {tab === 'guests' && <GuestsTab />}
+        {tab === 'guests' && <GuestsTab event={dashboardQuery.data?.event ?? null} />}
         {tab === 'tables' && tablesEnabled && <TablesTab />}
         {tab === 'moderation' && <ModerationTab />}
+        {tab === 'team' && <TeamTab />}
         {tab === 'settings' && (
           <SettingsTab event={dashboardQuery.data?.event ?? null} />
         )}
@@ -308,19 +324,78 @@ function OverviewTab({
 
 // ---------- guests ----------
 
-function GuestsTab() {
+function GuestsTab({ event }: { event: EventSettings | null }) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const me = getSessionUser();
   const [form, setForm] = useState({ guestName: '', phone: '', allowedCount: 2, tableId: '' });
+  const [createdByFilter, setCreatedByFilter] = useState('all');
+  const savedWhatsapp = normalizeInvitationConfig(event?.invitationConfig).whatsappMessage;
+  const [whatsappDraft, setWhatsappDraft] = useState({
+    en: savedWhatsapp?.en ?? DEFAULT_WHATSAPP_MESSAGE.en,
+    ar: savedWhatsapp?.ar ?? DEFAULT_WHATSAPP_MESSAGE.ar,
+  });
+  useEffect(() => {
+    const saved = normalizeInvitationConfig(event?.invitationConfig).whatsappMessage;
+    setWhatsappDraft({
+      en: saved?.en ?? DEFAULT_WHATSAPP_MESSAGE.en,
+      ar: saved?.ar ?? DEFAULT_WHATSAPP_MESSAGE.ar,
+    });
+  }, [event?.id, event?.invitationConfig]);
+
+  const saveWhatsappTemplate = async () => {
+    try {
+      const normalized = normalizeInvitationConfig(event?.invitationConfig);
+      await api.patch('/admin/event', {
+        invitationConfig: { ...normalized, whatsappMessage: whatsappDraft },
+      });
+      queryClient.invalidateQueries({ queryKey: ['admin-dashboard'] });
+      toast({ title: 'WhatsApp message saved', duration: 2500 });
+    } catch (e) {
+      toast({ title: 'Save failed', description: e instanceof Error ? e.message : '' });
+    }
+  };
+
+  const usersQuery = useQuery({
+    queryKey: ['admin-users'],
+    queryFn: () => api.get<{ users: AdminUser[] }>('/admin/users'),
+  });
 
   const invitationsQuery = useQuery({
-    queryKey: ['admin-invitations'],
-    queryFn: () => api.get<{ invitations: AdminInvitation[] }>('/admin/invitations'),
+    queryKey: ['admin-invitations', createdByFilter],
+    queryFn: () =>
+      api.get<{ invitations: AdminInvitation[] }>(
+        `/admin/invitations${createdByFilter !== 'all' ? `?createdBy=${createdByFilter}` : ''}`,
+      ),
   });
   const refresh = () => {
     queryClient.invalidateQueries({ queryKey: ['admin-invitations'] });
     queryClient.invalidateQueries({ queryKey: ['admin-dashboard'] });
+  };
+
+  const pickContact = async () => {
+    const nav = navigator as Navigator & {
+      contacts?: { select: (props: string[], opts: { multiple: boolean }) => Promise<Array<{ name?: string[]; tel?: string[] }>> };
+    };
+    if (!nav.contacts) {
+      toast({
+        title: 'Not supported on this browser/device',
+        description: 'Contact picking needs Chrome on Android. Type the name and number instead.',
+      });
+      return;
+    }
+    try {
+      const [contact] = await nav.contacts.select(['name', 'tel'], { multiple: false });
+      if (!contact) return;
+      setForm((f) => ({
+        ...f,
+        guestName: contact.name?.[0] || f.guestName,
+        phone: contact.tel?.[0] || f.phone,
+      }));
+    } catch {
+      // User cancelled the picker or denied permission — nothing to do.
+    }
   };
 
   const createMutation = useMutation({
@@ -378,16 +453,17 @@ function GuestsTab() {
   const inviteUrl = (inv: AdminInvitation, lang: 'en' | 'ar') =>
     publicUrl(`/i/${inv.token}${lang === 'ar' ? '?lang=ar' : ''}`);
 
-  const inviteText = (inv: AdminInvitation, lang: 'en' | 'ar') =>
-    lang === 'ar'
-      ? `بكل حب وسعادة، نتشرف بدعوتكم لمشاركتنا فرحتنا في يوم زفافنا 💍\n` +
-        `محمد ورناد — السبت ٢٥ تموز ٢٠٢٦ · ٧:٠٠ مساءً · تل الصنوبر، عمّان\n` +
-        `دعوتكم الشخصية (${inv.allowedCount} ${inv.allowedCount === 1 ? 'مقعد' : 'مقاعد'}):\n` +
-        inviteUrl(inv, 'ar')
-      : `With love and joy, we invite you to celebrate our wedding day with us. 💍\n` +
-        `Mohammad & Renad — Saturday, July 25, 2026 · 7:00 PM · Tal Pine, Amman\n` +
-        `Your personal invitation (${inv.allowedCount} ${inv.allowedCount === 1 ? 'seat' : 'seats'}):\n` +
-        inviteUrl(inv, 'en');
+  const inviteText = (inv: AdminInvitation, lang: 'en' | 'ar') => {
+    const seats =
+      lang === 'ar'
+        ? `${inv.allowedCount} ${inv.allowedCount === 1 ? 'مقعد' : 'مقاعد'}`
+        : `${inv.allowedCount} ${inv.allowedCount === 1 ? 'seat' : 'seats'}`;
+    const template =
+      (lang === 'ar' ? whatsappDraft.ar : whatsappDraft.en) || DEFAULT_WHATSAPP_MESSAGE[lang];
+    return template
+      .replaceAll('{seats}', seats)
+      .replaceAll('{link}', inviteUrl(inv, lang));
+  };
 
   const shareWhatsApp = (inv: AdminInvitation, lang: 'en' | 'ar') => {
     const phone = inv.phone?.replace(/[^\d]/g, '');
@@ -431,12 +507,22 @@ function GuestsTab() {
           </label>
           <label className="text-xs">
             <span className="block text-[10px] uppercase tracking-widest opacity-60 mb-1">Phone (WhatsApp)</span>
-            <input
-              value={form.phone}
-              onChange={(e) => setForm({ ...form, phone: e.target.value })}
-              className="w-full px-3 py-2.5 border border-[#D48A96]/40 bg-white/70 focus:outline-none focus:border-[#B25A6C]"
-              placeholder="+9627…"
-            />
+            <div className="flex gap-1.5">
+              <input
+                value={form.phone}
+                onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                className="w-full px-3 py-2.5 border border-[#D48A96]/40 bg-white/70 focus:outline-none focus:border-[#B25A6C]"
+                placeholder="+9627…"
+              />
+              <button
+                type="button"
+                onClick={pickContact}
+                title="Pick from contacts"
+                className="px-3 border border-[#D48A96]/40 text-[#B25A6C] hover:bg-[#D48A96]/10 shrink-0"
+              >
+                📇
+              </button>
+            </div>
           </label>
           <label className="text-xs">
             <span className="block text-[10px] uppercase tracking-widest opacity-60 mb-1">Seats</span>
@@ -500,8 +586,70 @@ function GuestsTab() {
         </div>
       </section>
 
+      <section className="bg-[#F9F3F3] border border-[#D48A96]/30 p-4">
+        <h2 className="text-xs uppercase tracking-[0.25em] text-[#45383C]/50 mb-1">
+          WhatsApp message
+        </h2>
+        <p className="text-[11px] opacity-55 mb-3">
+          This is what the WhatsApp EN/عربي buttons send below. Use <code>{'{link}'}</code> for the
+          guest's personal invitation link and <code>{'{seats}'}</code> for their seat count.
+        </p>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+          <label className="text-xs">
+            <span className="block text-[10px] uppercase tracking-widest opacity-60 mb-1">English</span>
+            <textarea
+              rows={4}
+              value={whatsappDraft.en}
+              onChange={(e) => setWhatsappDraft({ ...whatsappDraft, en: e.target.value })}
+              className="w-full px-3 py-2 border border-[#D48A96]/30 bg-white/80 text-sm focus:outline-none focus:border-[#B25A6C]"
+            />
+          </label>
+          <label className="text-xs">
+            <span className="block text-[10px] uppercase tracking-widest opacity-60 mb-1">العربية</span>
+            <textarea
+              rows={4}
+              dir="rtl"
+              value={whatsappDraft.ar}
+              onChange={(e) => setWhatsappDraft({ ...whatsappDraft, ar: e.target.value })}
+              className="w-full px-3 py-2 border border-[#D48A96]/30 bg-white/80 text-sm focus:outline-none focus:border-[#B25A6C]"
+            />
+          </label>
+        </div>
+        <div className="flex gap-3 mt-3">
+          <button
+            onClick={saveWhatsappTemplate}
+            className="px-6 py-2.5 bg-gradient-to-br from-[#D48A96] to-[#B25A6C] text-[#F9F3F3] uppercase tracking-widest text-xs font-semibold"
+          >
+            Save WhatsApp message
+          </button>
+          <button
+            onClick={() => setWhatsappDraft(DEFAULT_WHATSAPP_MESSAGE)}
+            className="px-6 py-2.5 border border-[#D48A96]/50 text-[#B25A6C] uppercase tracking-widest text-xs"
+          >
+            Reset to default
+          </button>
+        </div>
+      </section>
+
+      <div className="flex items-center gap-2 text-xs">
+        <span className="text-[10px] uppercase tracking-widest opacity-60">Added by</span>
+        <select
+          value={createdByFilter}
+          onChange={(e) => setCreatedByFilter(e.target.value)}
+          className="px-2 py-1.5 border border-[#D48A96]/40 bg-white/70 text-xs focus:outline-none"
+        >
+          <option value="all">Everyone</option>
+          {me && <option value="me">Me ({me.name})</option>}
+          {(usersQuery.data?.users ?? [])
+            .filter((u) => u.id !== me?.id)
+            .map((u) => (
+              <option key={u.id} value={u.id}>{u.name}</option>
+            ))}
+        </select>
+      </div>
+
       <section className="bg-[#F9F3F3] border border-[#D48A96]/30 overflow-x-auto">
-        <table className="w-full text-sm min-w-[720px]">
+        <table className="w-full text-sm min-w-[820px]">
           <thead>
             <tr className="text-left text-[10px] uppercase tracking-[0.15em] text-[#45383C]/50 border-b border-[#D48A96]/25">
               <th className="px-4 py-3">Guest</th>
@@ -509,6 +657,7 @@ function GuestsTab() {
               <th className="px-2 py-3">RSVP</th>
               <th className="hidden">Table</th>
               <th className="px-2 py-3">Checked in</th>
+              <th className="px-2 py-3">Added by</th>
               <th className="px-2 py-3">Share</th>
               <th className="px-2 py-3"></th>
             </tr>
@@ -520,7 +669,7 @@ function GuestsTab() {
                   <p className="font-medium">{inv.guestName}</p>
                   <p className="text-xs opacity-55">{inv.phone ?? '—'}</p>
                 </td>
-                <td className="hidden">
+                <td className="px-2 py-2.5">
                   <input
                     type="number"
                     min={1}
@@ -547,7 +696,7 @@ function GuestsTab() {
                     {inv.rsvpStatus === 'confirmed' && inv.rsvpCount ? ` · ${inv.rsvpCount}` : ''}
                   </span>
                 </td>
-                <td className="px-2 py-2.5">
+                <td className="hidden">
                   <select
                     value={inv.tableId ?? ''}
                     onChange={(e) =>
@@ -567,6 +716,9 @@ function GuestsTab() {
                   <span className={inv.checkedIn > 0 ? 'font-semibold text-[#B25A6C]' : 'opacity-40'}>
                     {inv.checkedIn}/{inv.allowedCount}
                   </span>
+                </td>
+                <td className="px-2 py-2.5 text-xs opacity-70">
+                  {inv.createdByName ?? '—'}
                 </td>
                 <td className="px-2 py-2.5 whitespace-nowrap">
                   <div className="flex items-center gap-1.5 text-xs">
@@ -628,7 +780,7 @@ function GuestsTab() {
             ))}
             {invitations.length === 0 && (
               <tr>
-                <td colSpan={7} className="px-4 py-8 text-center opacity-50">
+                <td colSpan={8} className="px-4 py-8 text-center opacity-50">
                   No guests yet — add your first invitation above.
                 </td>
               </tr>
@@ -757,6 +909,202 @@ function TablesTab() {
             </div>
           </div>
         ))}
+      </section>
+    </div>
+  );
+}
+
+// ---------- team ----------
+
+const ROLE_LABELS: Record<AdminUser['role'], string> = {
+  admin: 'Admin — full access',
+  guard: 'Guard — entrance scanner only',
+  moderator: 'Moderator — photo/message moderation only',
+};
+
+function TeamTab() {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const me = getSessionUser();
+  const [form, setForm] = useState({ username: '', name: '', password: '', role: 'admin' as AdminUser['role'] });
+
+  const usersQuery = useQuery({
+    queryKey: ['admin-users'],
+    queryFn: () => api.get<{ users: AdminUser[] }>('/admin/users'),
+  });
+  const refresh = () => queryClient.invalidateQueries({ queryKey: ['admin-users'] });
+
+  const createMutation = useMutation({
+    mutationFn: () => api.post('/admin/users', form),
+    onSuccess: () => {
+      setForm({ username: '', name: '', password: '', role: 'admin' });
+      refresh();
+      toast({ title: 'Team member added', duration: 3000 });
+    },
+    onError: (e: Error) => toast({ title: 'Could not add team member', description: e.message }),
+  });
+
+  const patchUser = async (id: number, patch: Record<string, unknown>) => {
+    try {
+      await api.patch(`/admin/users/${id}`, patch);
+      refresh();
+    } catch (e) {
+      toast({ title: 'Update failed', description: e instanceof Error ? e.message : '' });
+    }
+  };
+
+  const removeUser = async (u: AdminUser) => {
+    if (!window.confirm(`Remove ${u.name} (${u.username})? They will immediately lose access.`)) return;
+    try {
+      await api.delete(`/admin/users/${u.id}`);
+      refresh();
+    } catch (e) {
+      toast({ title: 'Could not remove team member', description: e instanceof Error ? e.message : '' });
+    }
+  };
+
+  const users = usersQuery.data?.users ?? [];
+
+  return (
+    <div className="space-y-6">
+      <section className="bg-[#F9F3F3] border border-[#D48A96]/30 p-4">
+        <h2 className="text-xs uppercase tracking-[0.25em] text-[#45383C]/50 mb-3">Add team member</h2>
+        <form
+          className="grid grid-cols-1 sm:grid-cols-[1.2fr_1.2fr_1.2fr_1.4fr_auto] gap-2 items-end"
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (form.username.trim() && form.name.trim() && form.password.length >= 6) {
+              createMutation.mutate();
+            }
+          }}
+        >
+          <label className="text-xs">
+            <span className="block text-[10px] uppercase tracking-widest opacity-60 mb-1">Name</span>
+            <input
+              value={form.name}
+              onChange={(e) => setForm({ ...form, name: e.target.value })}
+              className="w-full px-3 py-2.5 border border-[#D48A96]/40 bg-white/70 focus:outline-none focus:border-[#B25A6C]"
+              placeholder="Renad"
+            />
+          </label>
+          <label className="text-xs">
+            <span className="block text-[10px] uppercase tracking-widest opacity-60 mb-1">Username</span>
+            <input
+              value={form.username}
+              onChange={(e) => setForm({ ...form, username: e.target.value })}
+              autoCapitalize="none"
+              className="w-full px-3 py-2.5 border border-[#D48A96]/40 bg-white/70 focus:outline-none focus:border-[#B25A6C]"
+              placeholder="renad"
+            />
+          </label>
+          <label className="text-xs">
+            <span className="block text-[10px] uppercase tracking-widest opacity-60 mb-1">Password</span>
+            <input
+              type="password"
+              value={form.password}
+              onChange={(e) => setForm({ ...form, password: e.target.value })}
+              autoComplete="new-password"
+              className="w-full px-3 py-2.5 border border-[#D48A96]/40 bg-white/70 focus:outline-none focus:border-[#B25A6C]"
+              placeholder="At least 6 characters"
+            />
+          </label>
+          <label className="text-xs">
+            <span className="block text-[10px] uppercase tracking-widest opacity-60 mb-1">Role</span>
+            <select
+              value={form.role}
+              onChange={(e) => setForm({ ...form, role: e.target.value as AdminUser['role'] })}
+              className="w-full px-3 py-2.5 border border-[#D48A96]/40 bg-white/70 focus:outline-none"
+            >
+              <option value="admin">Admin</option>
+              <option value="guard">Guard</option>
+              <option value="moderator">Moderator</option>
+            </select>
+          </label>
+          <button
+            type="submit"
+            disabled={
+              createMutation.isPending ||
+              !form.username.trim() ||
+              !form.name.trim() ||
+              form.password.length < 6
+            }
+            className="px-6 py-2.5 bg-gradient-to-br from-[#D48A96] to-[#B25A6C] text-[#F9F3F3] uppercase tracking-widest text-xs font-semibold disabled:opacity-50"
+          >
+            Add
+          </button>
+        </form>
+        <p className="text-[10px] opacity-50 mt-3">
+          Admins can add guests, filter their own guest list, and manage everything here. Guards can only sign
+          into the entrance scanner. Moderators can only approve/reject photos and messages.
+        </p>
+      </section>
+
+      <section className="bg-[#F9F3F3] border border-[#D48A96]/30 overflow-x-auto">
+        <table className="w-full text-sm min-w-[560px]">
+          <thead>
+            <tr className="text-left text-[10px] uppercase tracking-[0.15em] text-[#45383C]/50 border-b border-[#D48A96]/25">
+              <th className="px-4 py-3">Name</th>
+              <th className="px-2 py-3">Role</th>
+              <th className="px-2 py-3">Status</th>
+              <th className="px-2 py-3"></th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-[#D48A96]/15">
+            {users.map((u) => {
+              const isSelf = u.id === me?.id;
+              return (
+                <tr key={u.id} className={!u.active ? 'opacity-45' : ''}>
+                  <td className="px-4 py-2.5">
+                    <p className="font-medium">
+                      {u.name} {isSelf && <span className="text-[10px] opacity-50">(you)</span>}
+                    </p>
+                    <p className="text-xs opacity-55">@{u.username}</p>
+                  </td>
+                  <td className="px-2 py-2.5">
+                    <select
+                      value={u.role}
+                      disabled={isSelf}
+                      onChange={(e) => patchUser(u.id, { role: e.target.value })}
+                      className="px-2 py-1.5 border border-[#D48A96]/30 bg-white/60 text-xs disabled:opacity-50"
+                      title={ROLE_LABELS[u.role]}
+                    >
+                      <option value="admin">Admin</option>
+                      <option value="guard">Guard</option>
+                      <option value="moderator">Moderator</option>
+                    </select>
+                  </td>
+                  <td className="px-2 py-2.5">
+                    <button
+                      disabled={isSelf}
+                      onClick={() => patchUser(u.id, { active: !u.active })}
+                      className={`px-2 py-1 text-[10px] uppercase tracking-wide font-semibold disabled:opacity-50 ${
+                        u.active ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-700'
+                      }`}
+                    >
+                      {u.active ? 'Active' : 'Deactivated'}
+                    </button>
+                  </td>
+                  <td className="px-2 py-2.5 whitespace-nowrap text-right pr-4">
+                    <button
+                      disabled={isSelf}
+                      onClick={() => removeUser(u)}
+                      className="text-xs text-red-900/60 underline underline-offset-2 disabled:opacity-40"
+                    >
+                      Remove
+                    </button>
+                  </td>
+                </tr>
+              );
+            })}
+            {users.length === 0 && (
+              <tr>
+                <td colSpan={4} className="px-4 py-8 text-center opacity-50">
+                  No team members yet.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
       </section>
     </div>
   );
@@ -937,7 +1285,19 @@ function SettingsTab({ event }: { event: EventSettings | null }) {
   >(null);
 
   useEffect(() => {
-    if (event) setConfigDraft(normalizeInvitationConfig(event.invitationConfig));
+    if (!event) return;
+    const normalized = normalizeInvitationConfig(event.invitationConfig);
+    // Seed every editable field with real text — the couple's own custom
+    // wording if they've saved any, otherwise the built-in default copy —
+    // so the editor always shows what's actually live, never a blank box.
+    const texts = { ...(normalized.texts ?? {}) };
+    for (const { key } of EDITABLE_TEXTS) {
+      texts[key] = {
+        en: texts[key]?.en ?? defaultText('en', key),
+        ar: texts[key]?.ar ?? defaultText('ar', key),
+      };
+    }
+    setConfigDraft({ ...normalized, texts });
   }, [event?.id, event?.invitationConfig]);
 
   useEffect(() => {
@@ -977,6 +1337,14 @@ function SettingsTab({ event }: { event: EventSettings | null }) {
       const [item] = next.splice(index, 1);
       next.splice(nextIndex, 0, item!);
       return { ...current, sections: next };
+    });
+  };
+
+  /** Re-adds a removed section at the end of the card, shown again. */
+  const addSection = (id: SectionId) => {
+    setConfigDraft((current) => {
+      const others = resolveSections(current).filter((section) => section.id !== id);
+      return { ...current, sections: [...others, { id, enabled: true }] };
     });
   };
 
@@ -1226,68 +1594,124 @@ function SettingsTab({ event }: { event: EventSettings | null }) {
         <div>
           <h2 className="text-xs uppercase tracking-[0.25em] text-[#45383C]/50">Invitation card editor</h2>
           <p className="text-[11px] opacity-55 mt-2">
-            Blank text fields use the built-in default copy. Save applies to both public and personal invitation links.
+            This shows exactly what's live on the card right now — edit it directly. Save applies to
+            both public and personal invitation links.
           </p>
         </div>
 
-        <div>
-          <h3 className="text-[10px] uppercase tracking-widest opacity-60 mb-2">Sections</h3>
-          <div className="space-y-2">
-            {resolveSections(configDraft).map((section, index, all) => (
-              <div key={section.id} className="flex items-center gap-2 bg-white/55 border border-[#D48A96]/25 px-3 py-2">
-                <input
-                  type="checkbox"
-                  checked={section.enabled}
-                  onChange={(e) => setSection(section.id, { enabled: e.target.checked })}
-                  className="w-4 h-4 accent-[#B25A6C]"
-                />
-                <span className="flex-1 text-sm">{SECTION_LABELS[section.id]}</span>
-                <button
-                  type="button"
-                  disabled={index === 0}
-                  onClick={() => moveSection(section.id, -1)}
-                  className="px-2 py-1 border border-[#D48A96]/35 text-xs disabled:opacity-30"
-                >
-                  Up
-                </button>
-                <button
-                  type="button"
-                  disabled={index === all.length - 1}
-                  onClick={() => moveSection(section.id, 1)}
-                  className="px-2 py-1 border border-[#D48A96]/35 text-xs disabled:opacity-30"
-                >
-                  Down
-                </button>
+        {(() => {
+          const allSections = resolveSections(configDraft);
+          const shown = allSections.filter((s) => s.enabled);
+          const hidden = allSections.filter((s) => !s.enabled);
+          const enabledMap = new Map(allSections.map((s) => [s.id, s.enabled]));
+          return (
+            <>
+              <div>
+                <h3 className="text-[10px] uppercase tracking-widest opacity-60 mb-2">
+                  Sections on your card
+                </h3>
+                <div className="space-y-2">
+                  {shown.map((section, index) => (
+                    <div
+                      key={section.id}
+                      className="flex items-center gap-2 bg-white/55 border border-[#D48A96]/25 px-3 py-2"
+                    >
+                      <span className="flex-1 text-sm">{SECTION_LABELS[section.id]}</span>
+                      <button
+                        type="button"
+                        disabled={index === 0}
+                        onClick={() => moveSection(section.id, -1)}
+                        className="px-2 py-1 border border-[#D48A96]/35 text-xs disabled:opacity-30"
+                      >
+                        Up
+                      </button>
+                      <button
+                        type="button"
+                        disabled={index === shown.length - 1}
+                        onClick={() => moveSection(section.id, 1)}
+                        className="px-2 py-1 border border-[#D48A96]/35 text-xs disabled:opacity-30"
+                      >
+                        Down
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setSection(section.id, { enabled: false })}
+                        title="Remove from card"
+                        className="px-2 py-1 border border-red-800/25 text-red-800/70 text-xs hover:bg-red-800/5"
+                      >
+                        ✕ Remove
+                      </button>
+                    </div>
+                  ))}
+                  {shown.length === 0 && (
+                    <p className="text-xs opacity-50 italic">
+                      No sections on the card — add one below.
+                    </p>
+                  )}
+                </div>
+                {hidden.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mt-3">
+                    {hidden.map((section) => (
+                      <button
+                        key={section.id}
+                        type="button"
+                        onClick={() => addSection(section.id)}
+                        className="px-3 py-1.5 border border-[#D48A96]/40 text-[#B25A6C] text-xs hover:bg-[#D48A96]/10"
+                      >
+                        + Add {SECTION_LABELS[section.id]}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
-            ))}
-          </div>
-        </div>
 
-        <div>
-          <h3 className="text-[10px] uppercase tracking-widest opacity-60 mb-2">Text overrides</h3>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-            {EDITABLE_TEXTS.map(({ key, label }) => (
-              <div key={key} className="bg-white/55 border border-[#D48A96]/25 p-3">
-                <p className="text-[10px] uppercase tracking-widest opacity-60 mb-2">{label}</p>
-                <textarea
-                  rows={2}
-                  value={configDraft.texts?.[key]?.en ?? ''}
-                  onChange={(e) => setText(key, 'en', e.target.value)}
-                  placeholder="English override"
-                  className="w-full px-3 py-2 border border-[#D48A96]/30 bg-white/80 text-sm focus:outline-none focus:border-[#B25A6C]"
-                />
-                <textarea
-                  rows={2}
-                  dir="rtl"
-                  value={configDraft.texts?.[key]?.ar ?? ''}
-                  onChange={(e) => setText(key, 'ar', e.target.value)}
-                  placeholder="النص العربي"
-                  className="w-full mt-2 px-3 py-2 border border-[#D48A96]/30 bg-white/80 text-sm focus:outline-none focus:border-[#B25A6C]"
-                />
+              <div>
+                <h3 className="text-[10px] uppercase tracking-widest opacity-60 mb-2">Card wording</h3>
+                <div className="space-y-4">
+                  {TEXT_GROUPS.map((group) => {
+                    const groupLabel =
+                      group.id === 'envelope' ? 'Envelope (before opening)' : SECTION_LABELS[group.id];
+                    const isHidden = group.id !== 'envelope' && enabledMap.get(group.id) === false;
+                    return (
+                      <div
+                        key={group.id}
+                        className="bg-[#FDF9F8] border border-[#D48A96]/30 p-4 space-y-3"
+                      >
+                        <p className="text-[10px] uppercase tracking-widest text-[#B25A6C] font-semibold">
+                          {groupLabel}
+                          {isHidden && <span className="ml-2 text-[#45383C]/40">(currently hidden)</span>}
+                        </p>
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+                          {group.keys.map((key) => {
+                            const label = EDITABLE_TEXTS.find((e) => e.key === key)?.label ?? key;
+                            return (
+                              <div key={key}>
+                                <p className="text-[10px] uppercase tracking-widest opacity-50 mb-1">{label}</p>
+                                <textarea
+                                  rows={2}
+                                  value={configDraft.texts?.[key]?.en ?? ''}
+                                  onChange={(e) => setText(key, 'en', e.target.value)}
+                                  className="w-full px-3 py-2 border border-[#D48A96]/30 bg-white text-sm font-serif focus:outline-none focus:border-[#B25A6C]"
+                                />
+                                <textarea
+                                  rows={2}
+                                  dir="rtl"
+                                  value={configDraft.texts?.[key]?.ar ?? ''}
+                                  onChange={(e) => setText(key, 'ar', e.target.value)}
+                                  className="w-full mt-2 px-3 py-2 border border-[#D48A96]/30 bg-white text-sm font-serif focus:outline-none focus:border-[#B25A6C]"
+                                />
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
-            ))}
-          </div>
-        </div>
+            </>
+          );
+        })()}
 
         <div>
           <h3 className="text-[10px] uppercase tracking-widest opacity-60 mb-2">Background images</h3>

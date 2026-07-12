@@ -42,7 +42,7 @@ const STRINGS = {
   seatMany: { en: 'seats', ar: 'مقاعد' },
 
   // Date & venue
-  dateLine: { en: 'Saturday · July 25 · 2026', ar: 'السبت · ٢٥ تموز · ٢٠٢٦' },
+  dateLine: { en: 'Saturday · 25/07/2026', ar: 'السبت · 25/07/2026' },
   venueName: { en: 'Tal Pine', ar: 'تل الصنوبر' },
   venueTime: { en: 'At 7:00 in the evening', ar: 'في تمام الساعة السابعة مساءً' },
   noChildren: {
@@ -166,6 +166,12 @@ export function t(
 
 export const isRtl = (lang: Lang) => lang === 'ar';
 
+/** The built-in default copy, ignoring any admin override — used by the
+ * admin editor to seed its fields with real text instead of a blank box. */
+export function defaultText(lang: Lang, key: StringKey): string {
+  return STRINGS[key][lang];
+}
+
 /* ------------------------------------------------------------------ */
 /* Invitation configuration (editable from the admin panel)            */
 /* ------------------------------------------------------------------ */
@@ -187,7 +193,21 @@ export interface InvitationConfig {
     bottom?: string | null; // mirrored garland at the bottom
     center?: string | null; // fixed watercolor behind the content
   };
+  // WhatsApp invite message the admin panel sends per guest; {seats} and
+  // {link} are substituted with that guest's seat count and personal URL.
+  whatsappMessage?: { en?: string; ar?: string };
 }
+
+export const DEFAULT_WHATSAPP_MESSAGE: { en: string; ar: string } = {
+  en:
+    'With love and joy, we invite you to celebrate our wedding day with us. 💍\n' +
+    'Mohammad & Renad — Saturday, 25/07/2026 · 7:00 PM · Tal Pine, Amman\n' +
+    'Your personal invitation ({seats}):\n{link}',
+  ar:
+    'بكل حب وسعادة، نتشرف بدعوتكم لمشاركتنا فرحتنا في يوم زفافنا 💍\n' +
+    'محمد ورناد — السبت 25/07/2026 · ٧:٠٠ مساءً · تل الصنوبر، عمّان\n' +
+    'دعوتكم الشخصية ({seats}):\n{link}',
+};
 
 export const DEFAULT_SECTIONS: { id: SectionId; enabled: boolean }[] = [
   { id: 'header', enabled: true },
@@ -224,6 +244,20 @@ export const EDITABLE_TEXTS: { key: StringKey; label: string }[] = [
   { key: 'willYouJoin', label: 'RSVP question' },
   { key: 'nuqootBody', label: 'Nuqoot message' },
   { key: 'breakSeal', label: 'Envelope hint' },
+];
+
+/** Groups the editable text keys under the card section they appear in, so
+ * the admin editor can lay them out in the same order the guest sees them.
+ * 'envelope' isn't a real section (it's not toggleable) but groups the one
+ * text shown before the card opens. */
+export const TEXT_GROUPS: { id: SectionId | 'envelope'; keys: StringKey[] }[] = [
+  { id: 'envelope', keys: ['breakSeal'] },
+  { id: 'header', keys: ['togetherWithFamilies', 'coupleGroom', 'coupleBride', 'requestHonor', 'blessing'] },
+  { id: 'date', keys: ['dateLine'] },
+  { id: 'venue', keys: ['venueName', 'venueTime', 'noChildren'] },
+  { id: 'countdown', keys: ['countingDown'] },
+  { id: 'rsvp', keys: ['willYouJoin'] },
+  { id: 'nuqoot', keys: ['nuqootBody'] },
 ];
 
 /** Merge stored config with defaults (unknown/missing sections appended). */

@@ -702,11 +702,11 @@ export default function WeddingInvitation() {
                               className="flex items-center gap-3 sm:gap-4 text-center mt-8 sm:mt-0"
                               initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.4 }} transition={{ duration: 0.9, ease: 'easeOut' }}
                             >
-                              <span className="text-[#D48A96] text-base">✦</span>
-                              <p className="tracking-[0.22em] text-xs sm:text-sm uppercase text-[#45383C]/65 font-medium">
+                              <span className="text-[#D48A96] text-lg">✦</span>
+                              <p className="tracking-[0.22em] text-sm sm:text-base uppercase text-[#1A1516] font-medium">
                                 {t(lang, 'togetherWithFamilies')}
                               </p>
-                              <span className="text-[#D48A96] text-base">✦</span>
+                              <span className="text-[#D48A96] text-lg">✦</span>
                             </motion.div>
 
                             <motion.div
@@ -717,20 +717,20 @@ export default function WeddingInvitation() {
                               transition={{ duration: 1.15, ease: 'easeOut' }}
                             >
                               <h1
-                                className={`font-script text-5xl sm:text-6xl md:text-7xl text-[#45383C] ${rtl ? 'leading-[1.4]' : 'leading-[1.1]'}`}
+                                className={`font-script text-6xl sm:text-7xl md:text-8xl text-[#1A1516] ${rtl ? 'leading-[1.4]' : 'leading-[1.1]'}`}
                                 style={{ textShadow: '1px 2px 0px rgba(212,138,150,0.35)' }}
                               >
                                 {t(lang, 'coupleGroom')}
                               </h1>
                               <div className="flex items-center justify-center gap-3 sm:gap-5 my-2 sm:my-4">
                                 <div className="w-10 sm:w-20 h-[0.5px] bg-gradient-to-r from-transparent to-[#D48A96]" />
-                                <span className="text-2xl sm:text-4xl text-[#D48A96] font-script drop-shadow-sm">
+                                <span className="text-3xl sm:text-5xl text-[#D48A96] font-script drop-shadow-sm">
                                   {rtl ? 'و' : '&'}
                                 </span>
                                 <div className="w-10 sm:w-20 h-[0.5px] bg-gradient-to-l from-transparent to-[#D48A96]" />
                               </div>
                               <h1
-                                className={`font-script text-5xl sm:text-6xl md:text-7xl text-[#45383C] ${rtl ? 'leading-[1.4]' : 'leading-[1.1]'}`}
+                                className={`font-script text-6xl sm:text-7xl md:text-8xl text-[#1A1516] ${rtl ? 'leading-[1.4]' : 'leading-[1.1]'}`}
                                 style={{ textShadow: '1px 2px 0px rgba(212,138,150,0.35)' }}
                               >
                                 {t(lang, 'coupleBride')}
@@ -741,7 +741,7 @@ export default function WeddingInvitation() {
                               className="text-center max-w-sm mx-auto"
                               initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.4 }} transition={{ duration: 0.9, ease: 'easeOut' }}
                             >
-                              <p className="text-base sm:text-lg text-[#45383C]/75 leading-relaxed italic font-serif px-4">
+                              <p className="text-lg sm:text-xl text-[#1A1516] leading-relaxed font-serif px-4">
                                 {t(lang, 'requestHonor').split('\n').map((line, i) => (
                                   <React.Fragment key={i}>
                                     {i > 0 && <br />}
@@ -753,7 +753,7 @@ export default function WeddingInvitation() {
                               <p
                                 dir={rtl ? 'ltr' : 'rtl'}
                                 lang={rtl ? 'en' : 'ar'}
-                                className={`mt-4 text-base sm:text-lg text-[#B25A6C]/85 leading-loose px-4 ${rtl ? 'italic' : ''}`}
+                                className="mt-4 text-lg sm:text-xl text-[#1A1516] leading-loose px-4"
                               >
                                 {t(rtl ? 'en' : 'ar', 'blessing')}
                               </p>
@@ -771,13 +771,13 @@ export default function WeddingInvitation() {
                           >
                             <div className="inline-flex flex-col items-center gap-1.5 px-8 py-4 border-[0.5px] border-[#D48A96]/50 bg-[#FDF9F8] shadow-sm relative">
                               <div className="absolute inset-1 border-[0.5px] border-dashed border-[#D48A96]/25 pointer-events-none" />
-                              <p className="text-xs sm:text-sm uppercase tracking-[0.22em] text-[#D48A96] font-medium">
+                              <p className="text-sm sm:text-base uppercase tracking-[0.22em] text-[#1A1516] font-medium">
                                 {t(lang, 'especiallyFor')}
                               </p>
-                              <p className="font-script text-2xl sm:text-3xl text-[#45383C] leading-normal">
+                              <p className="font-script text-3xl sm:text-4xl text-[#1A1516] leading-normal">
                                 {invitation.guestName}
                               </p>
-                              <p className="text-xs sm:text-sm text-[#45383C]/60 tracking-wide">
+                              <p className="text-base sm:text-lg font-bold text-[#1A1516] tracking-wide">
                                 {t(lang, 'seatsReserved', {
                                   n: invitation.allowedCount,
                                   seats:
@@ -798,7 +798,7 @@ export default function WeddingInvitation() {
                             initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.4 }} transition={{ duration: 0.9, ease: 'easeOut' }}
                           >
                             <div className="h-[0.5px] flex-1 bg-gradient-to-r from-transparent via-[#D48A96]/60 to-[#D48A96]/60" />
-                            <p className="text-xs sm:text-sm uppercase tracking-[0.22em] text-[#45383C]/65 font-serif whitespace-nowrap">
+                            <p className="text-base sm:text-lg uppercase tracking-[0.22em] font-bold text-[#1A1516] font-serif whitespace-nowrap">
                               {t(lang, 'dateLine')}
                             </p>
                             <div className="h-[0.5px] flex-1 bg-gradient-to-l from-transparent via-[#D48A96]/60 to-[#D48A96]/60" />
@@ -815,14 +815,14 @@ export default function WeddingInvitation() {
                             <div className="p-6 sm:p-10 bg-[#FDF9F8] border-[0.5px] border-[#D48A96]/50 rounded-t-full w-full flex flex-col items-center gap-2 sm:gap-3 shadow-sm relative overflow-hidden">
                               <PineTreeSVG />
                               <div className="text-center z-10 mt-1">
-                                <p className="text-xl sm:text-2xl font-medium tracking-wider mb-1.5 text-[#45383C] font-serif">
+                                <p className="text-2xl sm:text-3xl font-bold tracking-wider mb-1.5 text-[#1A1516] font-serif">
                                   {t(lang, 'venueName')}
                                 </p>
                                 <div className="h-[0.5px] w-10 bg-[#D48A96] mx-auto mb-2.5" />
-                                <p className="text-base sm:text-lg text-[#45383C]/75 italic tracking-wide">
+                                <p className="text-lg sm:text-xl font-bold text-[#1A1516] tracking-wide">
                                   {t(lang, 'venueTime')}
                                 </p>
-                                <p className="text-xs sm:text-sm text-[#B25A6C]/75 mt-2 italic leading-relaxed max-w-[230px] mx-auto">
+                                <p className="text-sm sm:text-base text-[#1A1516] mt-2 leading-relaxed max-w-[230px] mx-auto">
                                   {t(lang, 'noChildren')}
                                 </p>
                               </div>
@@ -834,7 +834,7 @@ export default function WeddingInvitation() {
                                 href={MAPS_URL}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="flex-1 flex items-center justify-center gap-2 py-2.5 sm:py-3 border border-[#D48A96]/70 bg-transparent hover:bg-[#D48A96]/8 transition-colors text-[#45383C]/75 text-xs sm:text-sm uppercase tracking-widest font-serif"
+                                className="flex-1 flex items-center justify-center gap-2 py-2.5 sm:py-3 border border-[#D48A96]/70 bg-transparent hover:bg-[#D48A96]/8 transition-colors text-[#1A1516] text-sm sm:text-base uppercase tracking-widest font-serif"
                               >
                                 <svg className="w-3.5 h-3.5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                                   <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" />
@@ -846,7 +846,7 @@ export default function WeddingInvitation() {
                               <div className="flex-1 relative">
                                 <button
                                   onClick={() => setShowCalendar((v) => !v)}
-                                  className="w-full flex items-center justify-center gap-2 py-2.5 sm:py-3 border border-[#D48A96]/70 bg-transparent hover:bg-[#D48A96]/8 transition-colors text-[#45383C]/75 text-xs sm:text-sm uppercase tracking-widest font-serif"
+                                  className="w-full flex items-center justify-center gap-2 py-2.5 sm:py-3 border border-[#D48A96]/70 bg-transparent hover:bg-[#D48A96]/8 transition-colors text-[#1A1516] text-sm sm:text-base uppercase tracking-widest font-serif"
                                 >
                                   <svg className="w-3.5 h-3.5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                                     <rect x="3" y="4" width="18" height="18" rx="2" />
@@ -889,12 +889,12 @@ export default function WeddingInvitation() {
                                 initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.4 }} transition={{ duration: 0.9, ease: 'easeOut' }}
                               >
                                 <div className="inline-flex items-center gap-3 px-8 py-3.5 border-[0.5px] border-[#D48A96]/50 bg-[#FDF9F8] shadow-sm">
-                                  <span className="text-[#D48A96] text-base">✦</span>
-                                  <p className="text-xs sm:text-sm uppercase tracking-[0.22em] text-[#45383C]/70">
+                                  <span className="text-[#D48A96] text-lg">✦</span>
+                                  <p className="text-sm sm:text-base uppercase tracking-[0.22em] text-[#1A1516]">
                                     {t(lang, 'yourTable')}&nbsp;·&nbsp;
-                                    <span className="text-[#45383C] font-semibold">{invitation.tableName}</span>
+                                    <span className="text-[#1A1516] font-semibold">{invitation.tableName}</span>
                                   </p>
-                                  <span className="text-[#D48A96] text-base">✦</span>
+                                  <span className="text-[#D48A96] text-lg">✦</span>
                                 </div>
                               </motion.div>
                             )}
@@ -1437,7 +1437,7 @@ function RsvpSection({
       dir={rtl ? 'rtl' : 'ltr'}
     >
       <motion.h2
-        className="font-script text-3xl sm:text-4xl text-[#45383C] mb-1 sm:mb-3"
+        className="font-script text-4xl sm:text-5xl text-[#1A1516] mb-1 sm:mb-3"
         initial={{ opacity: 0, y: 20, filter: 'blur(5px)' }}
         whileInView={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
         viewport={{ once: true, amount: 0.6 }}
@@ -1453,10 +1453,10 @@ function RsvpSection({
             <div className="absolute inset-1 border-[0.5px] border-dashed border-[#D48A96]/25 pointer-events-none" />
             {invitation!.rsvpStatus === 'confirmed' ? (
               <>
-                <p className="font-script text-2xl sm:text-3xl text-[#D48A96] mb-2">
+                <p className="font-script text-3xl sm:text-4xl text-[#1A1516] mb-2">
                   {t(lang, 'joyfullyAccepted')}
                 </p>
-                <p className="text-base sm:text-lg text-[#45383C]/75 italic">
+                <p className="text-lg sm:text-xl font-bold text-[#1A1516]">
                   {t(lang, 'guestsConfirmed', {
                     n: invitation!.rsvpCount ?? 0,
                     guests:
@@ -1468,10 +1468,10 @@ function RsvpSection({
               </>
             ) : (
               <>
-                <p className="font-script text-2xl sm:text-3xl text-[#45383C]/70 mb-2">
+                <p className="font-script text-3xl sm:text-4xl text-[#1A1516] mb-2">
                   {t(lang, 'regretfullyDeclined')}
                 </p>
-                <p className="text-base sm:text-lg text-[#45383C]/75 italic">
+                <p className="text-lg sm:text-xl text-[#1A1516]">
                   {t(lang, 'dearlyMissed')}
                 </p>
               </>
@@ -1479,48 +1479,48 @@ function RsvpSection({
           </div>
           <button
             onClick={() => setEditing(true)}
-            className="text-xs sm:text-sm uppercase tracking-[0.22em] text-[#B25A6C] underline underline-offset-4 hover:text-[#8F4557] transition-colors"
+            className="text-sm sm:text-base uppercase tracking-[0.22em] text-[#1A1516] underline underline-offset-4 hover:text-[#8F4557] transition-colors"
           >
             {t(lang, 'changeResponse')}
           </button>
         </div>
       ) : choosingCount && invitation ? (
         <div className="space-y-5">
-          <p className="text-base sm:text-lg text-[#45383C]/75 italic font-serif">
+          <p className="text-lg sm:text-xl text-[#1A1516] font-serif">
             {t(lang, 'howMany')}
           </p>
           <div className="flex items-center justify-center gap-5">
             <button
               onClick={() => setCount((c) => Math.max(1, c - 1))}
-              className="w-11 h-11 border border-[#D48A96] text-[#B25A6C] text-xl hover:bg-[#D48A96]/10 transition-colors"
+              className="w-12 h-12 border border-[#D48A96] text-[#1A1516] text-2xl hover:bg-[#D48A96]/10 transition-colors"
               aria-label="Fewer guests"
             >
               −
             </button>
-            <span className="text-3xl sm:text-4xl font-serif text-[#45383C] w-14 tabular-nums">{count}</span>
+            <span className="text-4xl sm:text-5xl font-bold font-serif text-[#1A1516] w-16 text-center tabular-nums">{count}</span>
             <button
               onClick={() => setCount((c) => Math.min(invitation.allowedCount, c + 1))}
-              className="w-11 h-11 border border-[#D48A96] text-[#B25A6C] text-xl hover:bg-[#D48A96]/10 transition-colors"
+              className="w-12 h-12 border border-[#D48A96] text-[#1A1516] text-2xl hover:bg-[#D48A96]/10 transition-colors"
               aria-label="More guests"
             >
               +
             </button>
           </div>
-          <p className="text-xs sm:text-sm uppercase tracking-[0.22em] text-[#45383C]/50">
+          <p className="text-sm sm:text-base uppercase tracking-[0.22em] font-bold text-[#1A1516]">
             {t(lang, 'upToGuests', { n: invitation.allowedCount })}
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <button
               disabled={rsvpMutation.isPending}
               onClick={() => rsvpMutation.mutate({ status: 'confirmed', count })}
-              className="group relative px-8 py-3.5 bg-gradient-to-br from-[#D48A96] to-[#B25A6C] text-[#F9F3F3] uppercase tracking-widest text-xs sm:text-sm font-semibold shadow-lg transition-all hover:-translate-y-0.5 hover:shadow-xl disabled:opacity-60"
+              className="group relative px-8 py-3.5 bg-gradient-to-br from-[#D48A96] to-[#B25A6C] text-[#F9F3F3] uppercase tracking-widest text-sm sm:text-base font-semibold shadow-lg transition-all hover:-translate-y-0.5 hover:shadow-xl disabled:opacity-60"
             >
               <div className="absolute inset-[3px] border-[0.5px] border-[#F9F3F3]/40 pointer-events-none" />
               {rsvpMutation.isPending ? t(lang, 'sending') : t(lang, 'confirmAttendance')}
             </button>
             <button
               onClick={() => setChoosingCount(false)}
-              className="px-8 py-3.5 text-[#45383C]/60 border border-[#D48A96]/40 uppercase tracking-widest text-xs sm:text-sm hover:bg-[#D48A96]/5 transition-colors"
+              className="px-8 py-3.5 text-[#1A1516] border border-[#D48A96]/40 uppercase tracking-widest text-sm sm:text-base hover:bg-[#D48A96]/5 transition-colors"
             >
               {t(lang, 'back')}
             </button>
@@ -1528,14 +1528,14 @@ function RsvpSection({
         </div>
       ) : (
         <>
-          <p className="text-base sm:text-lg text-[#45383C]/75 italic mb-5 sm:mb-7 font-serif">
+          <p className="text-lg sm:text-xl text-[#1A1516] mb-5 sm:mb-7 font-serif">
             {t(lang, 'willYouJoin')}
           </p>
           <div className="flex flex-col sm:flex-row gap-3 sm:gap-5 justify-center w-full px-4">
             <button
               disabled={rsvpMutation.isPending}
               onClick={handleAccept}
-              className="group relative px-6 sm:px-8 py-3 sm:py-4 bg-gradient-to-br from-[#D48A96] to-[#B25A6C] text-[#F9F3F3] rounded-none uppercase tracking-widest text-xs sm:text-sm font-semibold shadow-lg transition-all hover:-translate-y-0.5 hover:shadow-xl w-full sm:w-auto disabled:opacity-60"
+              className="group relative px-6 sm:px-8 py-3 sm:py-4 bg-gradient-to-br from-[#D48A96] to-[#B25A6C] text-[#F9F3F3] rounded-none uppercase tracking-widest text-sm sm:text-base font-semibold shadow-lg transition-all hover:-translate-y-0.5 hover:shadow-xl w-full sm:w-auto disabled:opacity-60"
             >
               <div className="absolute inset-[3px] border-[0.5px] border-[#F9F3F3]/40 pointer-events-none transition-transform group-hover:scale-[0.98]" />
               {t(lang, 'joyfullyAccepts')}
@@ -1543,7 +1543,7 @@ function RsvpSection({
             <button
               disabled={rsvpMutation.isPending}
               onClick={handleDecline}
-              className="group relative px-6 sm:px-8 py-3 sm:py-4 bg-transparent text-[#B25A6C] border border-[#D48A96] hover:bg-[#D48A96]/5 transition-all uppercase tracking-widest text-xs sm:text-sm font-semibold w-full sm:w-auto shadow-sm disabled:opacity-60"
+              className="group relative px-6 sm:px-8 py-3 sm:py-4 bg-transparent text-[#1A1516] border border-[#D48A96] hover:bg-[#D48A96]/5 transition-all uppercase tracking-widest text-sm sm:text-base font-semibold w-full sm:w-auto shadow-sm disabled:opacity-60"
             >
               <div className="absolute inset-[3px] border-[0.5px] border-[#D48A96]/30 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity" />
               {t(lang, 'regretfullyDeclines')}
@@ -1584,17 +1584,17 @@ function NuqootSection({ lang }: { lang: Lang }) {
       initial={{ opacity: 0, y: 40 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.35 }} transition={{ duration: 1, ease: 'easeOut' }}
       dir={rtl ? 'rtl' : 'ltr'}
     >
-      <h2 className="font-script text-3xl sm:text-4xl text-[#45383C] mb-2">
+      <h2 className="font-script text-4xl sm:text-5xl text-[#1A1516] mb-2">
         {t(lang, 'nuqootTitle')}
       </h2>
       <p
         dir={rtl ? 'ltr' : 'rtl'}
         lang={rtl ? 'en' : 'ar'}
-        className="text-base sm:text-lg text-[#D48A96] mb-4"
+        className="text-lg sm:text-xl text-[#1A1516] mb-4"
       >
         {t(lang, 'nuqootSub')}
       </p>
-      <p className="text-base sm:text-lg text-[#45383C]/70 italic font-serif max-w-sm mx-auto leading-relaxed mb-6">
+      <p className="text-lg sm:text-xl text-[#1A1516] font-serif max-w-sm mx-auto leading-relaxed mb-6">
         {t(lang, 'nuqootBody')}
       </p>
 
@@ -1607,21 +1607,21 @@ function NuqootSection({ lang }: { lang: Lang }) {
             <path d="M5 10 v7 M9.5 10 v7 M14.5 10 v7 M19 10 v7" />
             <path d="M3 20 h18" />
           </svg>
-          <p className="text-xs sm:text-sm uppercase tracking-[0.22em] text-[#45383C]/60">
+          <p className="text-sm sm:text-base uppercase tracking-[0.22em] text-[#1A1516]">
             {t(lang, 'cliqAlias')}
           </p>
         </div>
-        <p className="text-xl sm:text-2xl tracking-[0.18em] text-[#45383C] font-medium tabular-nums" dir="ltr">
+        <p className="text-2xl sm:text-3xl tracking-[0.18em] text-[#1A1516] font-bold tabular-nums" dir="ltr">
           {CLIQ_ALIAS}
         </p>
         <button
           onClick={copyAlias}
-          className="group relative mt-1 px-7 py-2.5 bg-gradient-to-br from-[#D48A96] to-[#B25A6C] text-[#F9F3F3] uppercase tracking-widest text-xs sm:text-sm font-semibold shadow-md transition-all hover:-translate-y-0.5 hover:shadow-lg"
+          className="group relative mt-1 px-7 py-2.5 bg-gradient-to-br from-[#D48A96] to-[#B25A6C] text-[#F9F3F3] uppercase tracking-widest text-sm sm:text-base font-semibold shadow-md transition-all hover:-translate-y-0.5 hover:shadow-lg"
         >
           <div className="absolute inset-[3px] border-[0.5px] border-[#F9F3F3]/40 pointer-events-none" />
           {copied ? t(lang, 'copied') : t(lang, 'copyAlias')}
         </button>
-        <p className="text-xs sm:text-sm text-[#45383C]/50 tracking-wide">
+        <p className="text-sm sm:text-base text-[#1A1516] tracking-wide">
           {t(lang, 'cliqNote')}
         </p>
       </div>
@@ -1656,7 +1656,7 @@ function CountdownTimer({ lang }: { lang: Lang }) {
     >
       <div className="flex items-center justify-center gap-2 sm:gap-4 mb-6 sm:mb-8">
         <div className="h-[0.5px] bg-gradient-to-r from-transparent via-[#D48A96]/50 to-transparent flex-1 max-w-[80px] sm:max-w-[110px]" />
-        <p className="tracking-[0.22em] text-xs sm:text-sm uppercase text-[#D48A96] font-medium font-serif">
+        <p className="tracking-[0.22em] text-sm sm:text-base uppercase text-[#1A1516] font-medium font-serif">
           {t(lang, 'countingDown')}
         </p>
         <div className="h-[0.5px] bg-gradient-to-r from-transparent via-[#D48A96]/50 to-transparent flex-1 max-w-[80px] sm:max-w-[110px]" />
@@ -1677,7 +1677,7 @@ function CountdownTimer({ lang }: { lang: Lang }) {
             viewport={{ once: true, amount: 0.6 }}
             transition={{ duration: 0.7, delay: i * 0.09, ease: 'easeOut' }}
           >
-            <div className="w-14 h-16 sm:w-16 sm:h-20 md:w-20 md:h-24 flex items-center justify-center bg-[#F9F3F3] border-[0.5px] border-[#D48A96]/55 shadow-md relative overflow-hidden mb-2 sm:mb-3 group-hover:shadow-lg transition-shadow">
+            <div className="w-16 h-20 sm:w-20 sm:h-24 md:w-24 md:h-28 flex items-center justify-center bg-[#F9F3F3] border-[0.5px] border-[#D48A96]/55 shadow-md relative overflow-hidden mb-2 sm:mb-3 group-hover:shadow-lg transition-shadow">
               <div className="absolute inset-1 border-[0.5px] border-dashed border-[#D48A96]/25 pointer-events-none" />
               <div className="absolute top-1 left-1 w-1.5 h-1.5 sm:w-2 sm:h-2 border-t border-l border-[#D48A96]" />
               <div className="absolute top-1 right-1 w-1.5 h-1.5 sm:w-2 sm:h-2 border-t border-r border-[#D48A96]" />
@@ -1691,14 +1691,14 @@ function CountdownTimer({ lang }: { lang: Lang }) {
                     animate={{ y: 0, opacity: 1 }}
                     exit={{ y: -15, opacity: 0 }}
                     transition={{ duration: 0.3 }}
-                    className="text-xl sm:text-2xl md:text-3xl text-[#45383C] font-medium font-serif block absolute tabular-nums"
+                    className="text-2xl sm:text-3xl md:text-4xl text-[#1A1516] font-bold font-serif block absolute tabular-nums"
                   >
                     {value.toString().padStart(2, '0')}
                   </motion.span>
                 </AnimatePresence>
               </div>
             </div>
-            <span className="text-xs sm:text-sm uppercase tracking-[0.22em] text-[#45383C]/55 font-serif">{label}</span>
+            <span className="text-sm sm:text-base uppercase tracking-[0.22em] text-[#1A1516] font-serif">{label}</span>
           </motion.div>
         ))}
       </div>

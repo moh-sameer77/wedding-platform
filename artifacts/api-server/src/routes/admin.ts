@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { z } from "zod";
-import { and, desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, ne, sql } from "drizzle-orm";
 import {
   db,
   eventsTable,
@@ -11,7 +11,7 @@ import {
   memoryUploadsTable,
   guestbookMessagesTable,
 } from "@workspace/db";
-import { generateToken } from "../lib/crypto";
+import { generateToken, hashPassword } from "../lib/crypto";
 import { requireAuth } from "../middlewares/auth";
 
 const router: IRouter = Router();
@@ -20,6 +20,158 @@ async function currentEvent() {
   const [event] = await db.select().from(eventsTable).limit(1);
   return event;
 }
+
+/** Team management: admins can add/edit/remove admin, guard and moderator accounts. */
+function publicUser(u: typeof usersTable.$inferSelect) {
+  return {
+    id: u.id,
+    username: u.username,
+    name: u.name,
+    role: u.role,
+    active: u.active,
+    createdAt: u.createdAt,
+  };
+}
+
+async function activeAdminCount(excludingUserId?: number): Promise<number> {
+  const conditions = [eq(usersTable.role, "admin"), eq(usersTable.active, true)];
+  if (excludingUserId !== undefined) conditions.push(ne(usersTable.id, excludingUserId));
+  const rows = await db
+    .select({ id: usersTable.id })
+    .from(usersTable)
+    .where(and(...conditions));
+  return rows.length;
+}
+
+router.get("/admin/users", requireAuth("admin"), async (_req, res, next) => {
+  try {
+    const rows = await db.select().from(usersTable).orderBy(usersTable.createdAt);
+    res.json({ users: rows.map(publicUser) });
+  } catch (err) {
+    next(err);
+  }
+});
+
+const userCreateSchema = z.object({
+  username: z
+    .string()
+    .trim()
+    .min(3)
+    .max(50)
+    .regex(/^[a-z0-9._-]+$/i, "Letters, numbers, dots, dashes and underscores only")
+    .transform((v) => v.toLowerCase()),
+  name: z.string().trim().min(1).max(100),
+  password: z.string().min(6).max(200),
+  role: z.enum(["admin", "guard", "moderator"]),
+});
+
+router.post("/admin/users", requireAuth("admin"), async (req, res, next) => {
+  try {
+    const parsed = userCreateSchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.issues[0]?.message ?? "Invalid team member" });
+      return;
+    }
+    const [existing] = await db
+      .select({ id: usersTable.id })
+      .from(usersTable)
+      .where(eq(usersTable.username, parsed.data.username));
+    if (existing) {
+      res.status(409).json({ error: "That username is already taken" });
+      return;
+    }
+    const [created] = await db
+      .insert(usersTable)
+      .values({
+        username: parsed.data.username,
+        name: parsed.data.name,
+        passwordHash: hashPassword(parsed.data.password),
+        role: parsed.data.role,
+      })
+      .returning();
+    res.status(201).json({ user: publicUser(created!) });
+  } catch (err) {
+    next(err);
+  }
+});
+
+const userPatchSchema = z.object({
+  name: z.string().trim().min(1).max(100).optional(),
+  role: z.enum(["admin", "guard", "moderator"]).optional(),
+  active: z.boolean().optional(),
+  password: z.string().min(6).max(200).optional(),
+});
+
+router.patch("/admin/users/:id", requireAuth("admin"), async (req, res, next) => {
+  try {
+    const id = Number(req.params.id);
+    const parsed = userPatchSchema.safeParse(req.body);
+    if (!Number.isInteger(id) || !parsed.success) {
+      res.status(400).json({ error: "Invalid update" });
+      return;
+    }
+    const [target] = await db.select().from(usersTable).where(eq(usersTable.id, id));
+    if (!target) {
+      res.status(404).json({ error: "Team member not found" });
+      return;
+    }
+    const demotingOrDeactivatingSelf =
+      target.id === req.user!.id &&
+      ((parsed.data.role && parsed.data.role !== "admin") || parsed.data.active === false);
+    if (demotingOrDeactivatingSelf) {
+      res.status(400).json({
+        error: "You can't remove your own admin access — ask another admin to do it",
+      });
+      return;
+    }
+    const losingAdminAccess =
+      target.role === "admin" &&
+      target.active &&
+      ((parsed.data.role && parsed.data.role !== "admin") || parsed.data.active === false);
+    if (losingAdminAccess && (await activeAdminCount(target.id)) === 0) {
+      res.status(400).json({ error: "Can't remove the last remaining admin" });
+      return;
+    }
+    const { password, ...rest } = parsed.data;
+    const patch: Record<string, unknown> = { ...rest };
+    if (password) patch.passwordHash = hashPassword(password);
+    const [updated] = await db
+      .update(usersTable)
+      .set(patch)
+      .where(eq(usersTable.id, id))
+      .returning();
+    res.json({ user: publicUser(updated!) });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.delete("/admin/users/:id", requireAuth("admin"), async (req, res, next) => {
+  try {
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id)) {
+      res.status(400).json({ error: "Invalid team member" });
+      return;
+    }
+    if (id === req.user!.id) {
+      res.status(400).json({ error: "You can't remove your own account while signed in as it" });
+      return;
+    }
+    const [target] = await db.select().from(usersTable).where(eq(usersTable.id, id));
+    if (!target) {
+      res.status(404).json({ error: "Team member not found" });
+      return;
+    }
+    if (target.role === "admin" && target.active && (await activeAdminCount(target.id)) === 0) {
+      res.status(400).json({ error: "Can't remove the last remaining admin" });
+      return;
+    }
+    await db.delete(usersTable).where(eq(usersTable.id, id));
+    res.json({ ok: true });
+  } catch (err) {
+    next(err);
+  }
+});
 
 /** Dashboard metrics (FR-035). */
 router.get("/admin/dashboard", requireAuth("admin"), async (_req, res, next) => {
@@ -149,25 +301,39 @@ router.patch("/admin/event", requireAuth("admin"), async (req, res, next) => {
   }
 });
 
-/** Guest list with live check-in totals (FR-011). */
+/** Guest list with live check-in totals (FR-011). Optionally scoped to
+ * whoever added each guest via ?createdBy=me|<userId>. */
 router.get(
   "/admin/invitations",
   requireAuth("admin"),
-  async (_req, res, next) => {
+  async (req, res, next) => {
     try {
+      const createdByParam = req.query["createdBy"];
+      const conditions = [];
+      if (typeof createdByParam === "string" && createdByParam.length > 0) {
+        const creatorId =
+          createdByParam === "me" ? req.user!.id : Number(createdByParam);
+        if (Number.isInteger(creatorId)) {
+          conditions.push(eq(invitationsTable.createdByUserId, creatorId));
+        }
+      }
       const rows = await db
         .select({
           invitation: invitationsTable,
           tableName: tablesTable.name,
+          createdByName: usersTable.name,
           checkedIn: sql<number>`coalesce((select sum(${checkinsTable.count}) from ${checkinsTable} where ${checkinsTable.invitationId} = ${invitationsTable.id}), 0)`,
         })
         .from(invitationsTable)
         .leftJoin(tablesTable, eq(invitationsTable.tableId, tablesTable.id))
+        .leftJoin(usersTable, eq(invitationsTable.createdByUserId, usersTable.id))
+        .where(conditions.length > 0 ? and(...conditions) : undefined)
         .orderBy(invitationsTable.guestName);
       res.json({
         invitations: rows.map((r) => ({
           ...r.invitation,
           tableName: r.tableName,
+          createdByName: r.createdByName,
           checkedIn: Number(r.checkedIn),
         })),
       });
@@ -208,6 +374,7 @@ router.post(
           allowedCount: parsed.data.allowedCount,
           tableId: event.tablesEnabled ? (parsed.data.tableId ?? null) : null,
           token: generateToken(),
+          createdByUserId: req.user!.id,
         })
         .returning();
       res.status(201).json({ invitation: created });
@@ -260,6 +427,7 @@ router.post(
               ? (byName.get(row.tableName.trim().toLowerCase()) ?? null)
               : null,
             token: generateToken(),
+            createdByUserId: req.user!.id,
           })),
         )
         .returning();

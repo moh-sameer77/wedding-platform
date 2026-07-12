@@ -41,6 +41,10 @@ export function requireAuth(...roles: string[]) {
         res.status(401).json({ error: "Session expired or invalid" });
         return;
       }
+      if (!row.user.active) {
+        res.status(401).json({ error: "This account has been deactivated" });
+        return;
+      }
       if (
         roles.length > 0 &&
         !roles.includes(row.user.role) &&
