@@ -18,6 +18,8 @@ export interface PublicEvent {
   welcomeMessage: string | null;
   thankYouMessage: string | null;
   guestbookPublic: boolean;
+  enableEnglish: boolean;
+  enableArabic: boolean;
   tablesEnabled: boolean;
   uploadsEnabled: boolean;
   maxUploadsPerGuest: number;

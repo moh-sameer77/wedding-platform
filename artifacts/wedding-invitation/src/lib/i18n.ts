@@ -26,7 +26,7 @@ const STRINGS = {
   },
   honorEyebrow: { en: 'have the honor of inviting you', ar: 'يتشرف' },
   groomFatherTitle: { en: 'Mr.', ar: 'السيد' },
-  groomFatherName: { en: 'Sameer Mohammad Maghathe', ar: 'سمير محمد المغثة' },
+  groomFatherName: { en: 'Sameer Maghathe', ar: 'سمير المغثة' },
   brideFatherTitle: { en: 'Mr.', ar: 'السيد' },
   brideFatherName: { en: 'Emad Abulhaija', ar: 'عماد فخري أبو الهيجاء' },
   requestHonor: {
@@ -129,6 +129,98 @@ const STRINGS = {
     en: "This invitation link is not valid or has been cancelled. Please check the link you received, or contact the couple's family.",
     ar: 'رابط الدعوة غير صالح أو تم إلغاؤه. يرجى التأكد من الرابط الذي وصلكم أو التواصل مع أهل العروسين',
   },
+
+  // Scanner (guard)
+  scannerTitle: { en: 'Entrance Scanner', ar: 'ماسح الدخول' },
+  scannerSubtitle: {
+    en: 'Guard or admin access · Mohammad & Renad Wedding',
+    ar: 'دخول الحراس أو الإدارة · حفل زفاف محمد ورناد',
+  },
+  scannerSignOut: { en: 'Sign out', ar: 'تسجيل الخروج' },
+  scannerCameraLabel: { en: 'Camera', ar: 'الكاميرا' },
+  scannerStarting: { en: 'Starting...', ar: 'جارٍ التشغيل...' },
+  scannerRestartCamera: { en: 'Restart camera', ar: 'إعادة تشغيل الكاميرا' },
+  scannerStartCamera: { en: 'Start camera', ar: 'تشغيل الكاميرا' },
+  scannerStop: { en: 'Stop', ar: 'إيقاف' },
+  scannerScanFromImage: { en: 'Scan QR from image', ar: 'مسح الرمز من صورة' },
+  scannerManualPlaceholder: {
+    en: 'Or paste/type invitation code…',
+    ar: 'أو الصقوا/اكتبوا رمز الدعوة…',
+  },
+  scannerCheck: { en: 'Check', ar: 'تحقق' },
+  scannerHttpsRequired: {
+    en: 'Camera access requires HTTPS on mobile browsers. Open the scanner from the deployed HTTPS URL, not an IP/http link.',
+    ar: 'يتطلب الوصول إلى الكاميرا اتصال HTTPS على متصفحات الجوال. افتحوا الماسح من رابط HTTPS الفعلي، وليس عنوان IP أو http.',
+  },
+  scannerNoCameraApi: {
+    en: 'This browser does not expose camera access. Use an updated Safari, Chrome, or Edge browser, or upload a QR image below.',
+    ar: 'هذا المتصفح لا يتيح الوصول إلى الكاميرا. استخدموا متصفح Safari أو Chrome أو Edge محدثاً، أو ارفعوا صورة الرمز أدناه.',
+  },
+  scannerCameraUnavailable: {
+    en: 'Camera unavailable. Check browser permission, HTTPS, and whether another app is using the camera.',
+    ar: 'الكاميرا غير متاحة. تحققوا من إذن المتصفح، واتصال HTTPS، وما إذا كان تطبيق آخر يستخدم الكاميرا.',
+  },
+  scannerQrImageError: { en: 'Could not read QR from image.', ar: 'تعذّرت قراءة الرمز من الصورة.' },
+  scannerInvalidQrTitle: { en: 'INVALID QR', ar: 'رمز غير صالح' },
+  scannerInvalidQrBody: {
+    en: 'This invitation does not exist, was cancelled, or is not for this event.',
+    ar: 'هذه الدعوة غير موجودة، أو تم إلغاؤها، أو ليست لهذه المناسبة.',
+  },
+  scannerCancelledTitle: { en: 'CANCELLED', ar: 'ملغاة' },
+  scannerCancelledBody: { en: '{name} — this invitation was cancelled.', ar: '{name} — تم إلغاء هذه الدعوة.' },
+  scannerFullTitle: { en: 'ALREADY CHECKED IN', ar: 'تم تسجيل الحضور مسبقاً' },
+  scannerFullBody: {
+    en: '{name} — Allowed: {allowed} · Checked in: {checkedIn} · No remaining guests.',
+    ar: '{name} — المسموح به: {allowed} · تم تسجيله: {checkedIn} · لا يوجد ضيوف متبقون.',
+  },
+  scannerValidTitle: { en: 'VALID INVITATION', ar: 'دعوة صالحة' },
+  scannerValidBody: { en: 'Guest: {name}', ar: 'الضيف: {name}' },
+  scannerValidBodyWithTable: { en: 'Guest: {name} · Table: {table}', ar: 'الضيف: {name} · الطاولة: {table}' },
+  scannerAllowed: { en: 'Allowed', ar: 'المسموح به' },
+  scannerCheckedIn: { en: 'Checked in', ar: 'تم تسجيله' },
+  scannerRemaining: { en: 'Remaining', ar: 'المتبقي' },
+  scannerRsvpExpected: { en: 'RSVP: {status} ({n} expected)', ar: 'تأكيد الحضور: {status} (المتوقع {n})' },
+  scannerRsvpNoExpected: { en: 'RSVP: {status}', ar: 'تأكيد الحضور: {status}' },
+  scannerGuestsArriving: { en: 'Guests arriving now', ar: 'الضيوف الواصلون الآن' },
+  scannerExceeds: {
+    en: '⚠ Exceeds remaining count — override required',
+    ar: '⚠ يتجاوز العدد المتبقي — يلزم تجاوز خاص',
+  },
+  scannerExtraNamesTitle: {
+    en: 'Name(s) of the {n} extra guest(s)',
+    ar: 'اسم/أسماء الضيوف الإضافيين ({n})',
+  },
+  scannerExtraNamePlaceholder: { en: 'Extra guest {n} name', ar: 'اسم الضيف الإضافي {n}' },
+  scannerOverrideNeeded: {
+    en: 'Extra guest detected — approval required',
+    ar: 'تم رصد ضيف إضافي — يلزم الموافقة',
+  },
+  scannerOverrideReasonPlaceholder: {
+    en: 'Reason for escalation (optional)',
+    ar: 'سبب التصعيد (اختياري)',
+  },
+  scannerOverrideNotePlaceholder: {
+    en: 'Guard note: who approved this? (required)',
+    ar: 'ملاحظة الحارس: من وافق على ذلك؟ (مطلوب)',
+  },
+  scannerOverrideCheckIn: { en: 'Override & check in', ar: 'تجاوز وتسجيل الحضور' },
+  scannerBack: { en: 'Back', ar: 'رجوع' },
+  scannerCheckingIn: { en: 'Checking in…', ar: 'جارٍ تسجيل الحضور…' },
+  scannerCheckInOne: { en: 'Check in {n} guest', ar: 'تسجيل حضور {n} ضيف' },
+  scannerCheckInMany: { en: 'Check in {n} guests', ar: 'تسجيل حضور {n} ضيوف' },
+  scannerCancelScanAnother: { en: 'Cancel / scan another', ar: 'إلغاء / مسح ضيف آخر' },
+  scannerCheckedInBanner: { en: '✓ CHECKED IN', ar: '✓ تم تسجيل الحضور' },
+  scannerScanNext: { en: 'Scan next guest', ar: 'مسح الضيف التالي' },
+  scannerRecentCheckins: { en: 'Recent check-ins', ar: 'آخر عمليات تسجيل الحضور' },
+  scannerNoCheckinsYet: { en: 'No check-ins yet.', ar: 'لا يوجد تسجيل حضور بعد.' },
+  scannerOverrideBadge: { en: 'override', ar: 'تجاوز' },
+  scannerCouldNotResolve: { en: 'Could not resolve QR', ar: 'تعذّر التعرف على الرمز' },
+  scannerCheckInFailed: { en: 'Check-in failed', ar: 'فشل تسجيل الحضور' },
+  scannerCheckedInSuccess: {
+    en: '{name} — {n} checked in{override}. Remaining: {remaining}',
+    ar: '{name} — تم تسجيل {n}{override}. المتبقي: {remaining}',
+  },
+  scannerOverrideSuffix: { en: ' (OVERRIDE)', ar: ' (تجاوز)' },
 } as const;
 
 export type StringKey = keyof typeof STRINGS;

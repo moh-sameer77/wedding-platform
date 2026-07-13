@@ -79,7 +79,7 @@ export default function Memories() {
                   <motion.button
                     key={p.id}
                     onClick={() => setLightbox(p)}
-                    className="block w-full mb-3 bg-white p-1.5 pb-5 shadow-md hover:shadow-xl transition-shadow text-left"
+                    className="block w-full mb-3 bg-white p-1.5 pb-5 shadow-md hover:shadow-xl transition-shadow text-left break-inside-avoid-column"
                     initial={{ opacity: 0, y: 20 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}

@@ -8,6 +8,25 @@ import {
   type SessionUser,
 } from '@/lib/api';
 
+const LOGIN_LABELS = {
+  en: {
+    username: 'Username',
+    password: 'Password',
+    signIn: 'Sign in',
+    signingIn: 'Signing in…',
+    loginFailed: 'Login failed',
+    wrongRole: (roles: string) => `This page is for ${roles} accounts.`,
+  },
+  ar: {
+    username: 'اسم المستخدم',
+    password: 'كلمة المرور',
+    signIn: 'تسجيل الدخول',
+    signingIn: 'جارٍ تسجيل الدخول…',
+    loginFailed: 'فشل تسجيل الدخول',
+    wrongRole: (roles: string) => `هذه الصفحة مخصصة لحسابات ${roles} فقط.`,
+  },
+};
+
 /**
  * Wraps staff pages (scanner, admin). Shows an elegant login form until a
  * session with one of the allowed roles exists.
@@ -16,13 +35,17 @@ export default function LoginGate({
   roles,
   title,
   subtitle,
+  lang = 'en',
   children,
 }: {
   roles: SessionUser['role'][];
   title: string;
   subtitle: string;
+  lang?: 'en' | 'ar';
   children: (user: SessionUser, logout: () => void) => ReactNode;
 }) {
+  const rtl = lang === 'ar';
+  const labels = LOGIN_LABELS[lang];
   const [user, setUser] = useState<SessionUser | null>(() =>
     getSessionToken() ? getSessionUser() : null,
   );
@@ -53,20 +76,23 @@ export default function LoginGate({
       );
       setSession(res.token, res.user);
       if (!roles.includes(res.user.role) && res.user.role !== 'admin') {
-        setError(`This page is for ${roles.join('/')} accounts.`);
+        setError(labels.wrongRole(roles.join('/')));
         clearSession();
         return;
       }
       setUser(res.user);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Login failed');
+      setError(err instanceof Error ? err.message : labels.loginFailed);
     } finally {
       setBusy(false);
     }
   };
 
   return (
-    <div className="min-h-[100dvh] w-full bg-[#F3E4E2] flex items-center justify-center p-6 font-serif">
+    <div
+      className="min-h-[100dvh] w-full bg-[#F3E4E2] flex items-center justify-center p-6 font-serif"
+      dir={rtl ? 'rtl' : 'ltr'}
+    >
       <form
         onSubmit={submit}
         className="w-full max-w-sm bg-[#F9F3F3] border border-[#D48A96]/40 shadow-xl p-8 sm:p-10 relative"
@@ -77,7 +103,7 @@ export default function LoginGate({
         <p className="text-center text-xs text-[#45383C]/60 mb-7">{subtitle}</p>
 
         <label className="block text-[10px] uppercase tracking-[0.2em] text-[#45383C]/60 mb-1.5">
-          Username
+          {labels.username}
         </label>
         <input
           value={username}
@@ -87,7 +113,7 @@ export default function LoginGate({
           className="w-full mb-4 px-4 py-3 bg-white/60 border border-[#D48A96]/40 text-[#45383C] focus:outline-none focus:border-[#B25A6C] text-sm"
         />
         <label className="block text-[10px] uppercase tracking-[0.2em] text-[#45383C]/60 mb-1.5">
-          Password
+          {labels.password}
         </label>
         <input
           type="password"
@@ -104,7 +130,7 @@ export default function LoginGate({
           disabled={busy || !username || !password}
           className="w-full py-3.5 bg-gradient-to-br from-[#D48A96] to-[#B25A6C] text-[#F9F3F3] uppercase tracking-widest text-xs font-semibold shadow-lg transition-all hover:-translate-y-0.5 disabled:opacity-60"
         >
-          {busy ? 'Signing in…' : 'Sign in'}
+          {busy ? labels.signingIn : labels.signIn}
         </button>
       </form>
     </div>

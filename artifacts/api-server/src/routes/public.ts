@@ -45,6 +45,8 @@ function publicEvent(event: Event) {
     welcomeMessage: event.welcomeMessage,
     thankYouMessage: event.thankYouMessage,
     guestbookPublic: event.guestbookPublic,
+    enableEnglish: event.enableEnglish,
+    enableArabic: event.enableArabic,
     tablesEnabled: event.tablesEnabled,
     uploadsEnabled: event.uploadsEnabled,
     maxUploadsPerGuest: event.maxUploadsPerGuest,

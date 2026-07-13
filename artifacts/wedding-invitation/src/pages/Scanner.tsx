@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import LoginGate from '@/components/LoginGate';
 import { api, ApiError, type ResolveResult } from '@/lib/api';
 import { usePageTitle } from '@/hooks/use-page-title';
+import { useLang, t, isRtl, type Lang } from '@/lib/i18n';
 
 interface RecentCheckin {
   id: number;
@@ -24,25 +25,27 @@ interface CameraOption {
   label: string;
 }
 
-function cameraSupportMessage(): string | null {
+function cameraSupportMessage(lang: Lang): string | null {
   if (!window.isSecureContext) {
-    return 'Camera access requires HTTPS on mobile browsers. Open the scanner from the deployed HTTPS URL, not an IP/http link.';
+    return t(lang, 'scannerHttpsRequired');
   }
   if (!navigator.mediaDevices?.getUserMedia) {
-    return 'This browser does not expose camera access. Use an updated Safari, Chrome, or Edge browser, or upload a QR image below.';
+    return t(lang, 'scannerNoCameraApi');
   }
   return null;
 }
 
 export default function ScannerPage() {
   usePageTitle('Entrance Scanner');
+  const lang = useLang();
   return (
     <LoginGate
       roles={['guard', 'admin']}
-      title="Entrance Scanner"
-      subtitle="Guard or admin access · Mohammad & Renad Wedding"
+      title={t(lang, 'scannerTitle')}
+      subtitle={t(lang, 'scannerSubtitle')}
+      lang={lang}
     >
-      {(user, logout) => <ScannerScreen userName={user.name} logout={logout} />}
+      {(user, logout) => <ScannerScreen userName={user.name} logout={logout} lang={lang} />}
     </LoginGate>
   );
 }
@@ -50,10 +53,13 @@ export default function ScannerPage() {
 function ScannerScreen({
   userName,
   logout,
+  lang,
 }: {
   userName: string;
   logout: () => void;
+  lang: Lang;
 }) {
+  const rtl = isRtl(lang);
   const [result, setResult] = useState<ResolveResult | null>(null);
   const [manualToken, setManualToken] = useState('');
   const [count, setCount] = useState(1);
@@ -76,6 +82,14 @@ function ScannerScreen({
   // again underneath the guard and reset the count/override state.
   const showingOutcomeRef = useRef(false);
   const queryClient = useQueryClient();
+
+  const switchLang = () => {
+    const params = new URLSearchParams(window.location.search);
+    if (lang === 'ar') params.delete('lang');
+    else params.set('lang', 'ar');
+    const qs = params.toString();
+    window.location.search = qs;
+  };
 
   const recentQuery = useQuery({
     queryKey: ['recent-checkins'],
@@ -106,11 +120,11 @@ function ScannerScreen({
         setCount(Math.min(res.rsvpCount || res.remaining || 1, res.remaining || 1));
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not resolve QR');
+      setError(err instanceof Error ? err.message : t(lang, 'scannerCouldNotResolve'));
     } finally {
       resolvingRef.current = false;
     }
-  }, []);
+  }, [lang]);
 
   const stopScanner = useCallback(async () => {
     const scanner = scannerRef.current;
@@ -132,7 +146,7 @@ function ScannerScreen({
   }, []);
 
   const startScanner = useCallback(async () => {
-    const unsupported = cameraSupportMessage();
+    const unsupported = cameraSupportMessage(lang);
     if (unsupported) {
       setCameraError(unsupported);
       setCameraStatus('failed');
@@ -200,14 +214,14 @@ function ScannerScreen({
                 ? fallbackError.message
                 : primaryError instanceof Error
                   ? primaryError.message
-                  : 'Camera unavailable. Check browser permission, HTTPS, and whether another app is using the camera.';
+                  : t(lang, 'scannerCameraUnavailable');
             setCameraError(message);
             setCameraStatus('failed');
           }
         }
       }
     }
-  }, [resolveToken, selectedCameraId, stopScanner]);
+  }, [resolveToken, selectedCameraId, stopScanner, lang]);
 
   const scanQrImage = async (file: File | undefined) => {
     if (!file) return;
@@ -223,8 +237,8 @@ function ScannerScreen({
     } catch (err) {
       setCameraError(
         err instanceof Error
-          ? `Could not read QR from image: ${err.message}`
-          : 'Could not read QR from image.',
+          ? `${t(lang, 'scannerQrImageError')} (${err.message})`
+          : t(lang, 'scannerQrImageError'),
       );
     } finally {
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -278,7 +292,12 @@ function ScannerScreen({
         },
       );
       setSuccess(
-        `${res.guestName} — ${count} checked in${res.isOverride ? ' (OVERRIDE)' : ''}. Remaining: ${res.remaining}`,
+        t(lang, 'scannerCheckedInSuccess', {
+          name: res.guestName ?? '',
+          n: count,
+          override: res.isOverride ? t(lang, 'scannerOverrideSuffix') : '',
+          remaining: res.remaining ?? 0,
+        }),
       );
       setResult(null);
       setNeedsOverride(false);
@@ -288,7 +307,7 @@ function ScannerScreen({
       if (err instanceof ApiError && err.body['requiresOverride']) {
         setNeedsOverride(true);
       } else {
-        setError(err instanceof Error ? err.message : 'Check-in failed');
+        setError(err instanceof Error ? err.message : t(lang, 'scannerCheckInFailed'));
       }
     } finally {
       setBusy(false);
@@ -301,39 +320,43 @@ function ScannerScreen({
       case 'invalid':
         return (
           <div className="bg-red-700 text-white p-5 text-center">
-            <p className="text-2xl font-bold tracking-wide">INVALID QR</p>
-            <p className="text-sm mt-1 opacity-90">
-              This invitation does not exist, was cancelled, or is not for this
-              event.
-            </p>
+            <p className="text-2xl font-bold tracking-wide">{t(lang, 'scannerInvalidQrTitle')}</p>
+            <p className="text-sm mt-1 opacity-90">{t(lang, 'scannerInvalidQrBody')}</p>
           </div>
         );
       case 'cancelled':
         return (
           <div className="bg-red-700 text-white p-5 text-center">
-            <p className="text-2xl font-bold tracking-wide">CANCELLED</p>
+            <p className="text-2xl font-bold tracking-wide">{t(lang, 'scannerCancelledTitle')}</p>
             <p className="text-sm mt-1 opacity-90">
-              {result.guestName} — this invitation was cancelled.
+              {t(lang, 'scannerCancelledBody', { name: result.guestName ?? '' })}
             </p>
           </div>
         );
       case 'full':
         return (
           <div className="bg-amber-600 text-white p-5 text-center">
-            <p className="text-2xl font-bold tracking-wide">ALREADY CHECKED IN</p>
+            <p className="text-2xl font-bold tracking-wide">{t(lang, 'scannerFullTitle')}</p>
             <p className="text-sm mt-1 opacity-90">
-              {result.guestName} — Allowed: {result.allowedCount} · Checked in:{' '}
-              {result.checkedIn} · No remaining guests.
+              {t(lang, 'scannerFullBody', {
+                name: result.guestName ?? '',
+                allowed: result.allowedCount ?? 0,
+                checkedIn: result.checkedIn ?? 0,
+              })}
             </p>
           </div>
         );
       default:
         return (
           <div className="bg-emerald-700 text-white p-5 text-center">
-            <p className="text-2xl font-bold tracking-wide">VALID INVITATION</p>
+            <p className="text-2xl font-bold tracking-wide">{t(lang, 'scannerValidTitle')}</p>
             <p className="text-sm mt-1 opacity-90">
-              Guest: {result.guestName}
-              {result.tableName ? ` · Table: ${result.tableName}` : ''}
+              {result.tableName
+                ? t(lang, 'scannerValidBodyWithTable', {
+                    name: result.guestName ?? '',
+                    table: result.tableName,
+                  })
+                : t(lang, 'scannerValidBody', { name: result.guestName ?? '' })}
             </p>
           </div>
         );
@@ -344,7 +367,10 @@ function ScannerScreen({
     result?.status === 'valid' ? Math.max(0, count - (result.remaining ?? 0)) : 0;
 
   return (
-    <div className="min-h-[100dvh] bg-[#2A1E23] text-[#F9F3F3] font-serif relative">
+    <div
+      className="min-h-[100dvh] bg-[#2A1E23] text-[#F9F3F3] font-serif relative"
+      dir={rtl ? 'rtl' : 'ltr'}
+    >
       {/* Faint monogram watermark */}
       <div className="fixed inset-0 flex items-center justify-center pointer-events-none select-none">
         <p className="font-script text-[38vmin] text-[#D48A96]/[0.045] leading-none">M&amp;R</p>
@@ -353,30 +379,39 @@ function ScannerScreen({
         <div>
           <p className="font-script text-2xl text-[#D48A96] leading-none">M &amp; R</p>
           <p className="text-[10px] uppercase tracking-[0.2em] opacity-60">
-            Entrance Scanner
+            {t(lang, 'scannerTitle')}
           </p>
         </div>
-        <div className="text-right">
-          <p className="text-xs opacity-75">{userName}</p>
+        <div className="text-right flex items-center gap-3">
           <button
-            onClick={logout}
+            onClick={switchLang}
             className="text-[10px] uppercase tracking-widest text-[#D48A96] underline underline-offset-2"
+            dir={lang === 'ar' ? 'ltr' : 'rtl'}
           >
-            Sign out
+            {lang === 'ar' ? 'English' : 'العربية'}
           </button>
+          <div>
+            <p className="text-xs opacity-75">{userName}</p>
+            <button
+              onClick={logout}
+              className="text-[10px] uppercase tracking-widest text-[#D48A96] underline underline-offset-2"
+            >
+              {t(lang, 'scannerSignOut')}
+            </button>
+          </div>
         </div>
       </header>
 
       <main className="relative max-w-lg mx-auto p-4 space-y-4">
         {success && (
           <div className="bg-emerald-700 text-white p-5 text-center">
-            <p className="text-xl font-bold">✓ CHECKED IN</p>
+            <p className="text-xl font-bold">{t(lang, 'scannerCheckedInBanner')}</p>
             <p className="text-sm mt-1">{success}</p>
             <button
               onClick={reset}
               className="mt-3 px-6 py-2 bg-white/15 border border-white/40 uppercase tracking-widest text-xs"
             >
-              Scan next guest
+              {t(lang, 'scannerScanNext')}
             </button>
           </div>
         )}
@@ -396,7 +431,7 @@ function ScannerScreen({
             {cameras.length > 1 && (
               <label className="block text-xs">
                 <span className="block text-[10px] uppercase tracking-widest opacity-60 mb-1">
-                  Camera
+                  {t(lang, 'scannerCameraLabel')}
                 </span>
                 <select
                   value={selectedCameraId}
@@ -425,17 +460,17 @@ function ScannerScreen({
                 className="px-4 py-3 bg-[#D48A96] text-[#2A1E23] uppercase tracking-widest text-xs font-bold disabled:opacity-50"
               >
                 {cameraStatus === 'starting'
-                  ? 'Starting...'
+                  ? t(lang, 'scannerStarting')
                   : cameraStatus === 'scanning'
-                    ? 'Restart camera'
-                    : 'Start camera'}
+                    ? t(lang, 'scannerRestartCamera')
+                    : t(lang, 'scannerStartCamera')}
               </button>
               <button
                 type="button"
                 onClick={stopScanner}
                 className="px-4 py-3 border border-[#D48A96]/50 uppercase tracking-widest text-xs"
               >
-                Stop
+                {t(lang, 'scannerStop')}
               </button>
             </div>
 
@@ -444,7 +479,7 @@ function ScannerScreen({
               onClick={() => fileInputRef.current?.click()}
               className="w-full px-4 py-3 border border-[#D48A96]/50 uppercase tracking-widest text-xs"
             >
-              Scan QR from image
+              {t(lang, 'scannerScanFromImage')}
             </button>
             <input
               ref={fileInputRef}
@@ -472,14 +507,14 @@ function ScannerScreen({
             <input
               value={manualToken}
               onChange={(e) => setManualToken(e.target.value)}
-              placeholder="Or paste/type invitation code…"
-              className="flex-1 px-3 py-3 bg-white/10 border border-[#D48A96]/40 text-sm focus:outline-none focus:border-[#D48A96]"
+              placeholder={t(lang, 'scannerManualPlaceholder')}
+              className="flex-1 px-3 py-3 bg-white/10 border border-[#D48A96]/40 text-sm focus:outline-none"
             />
             <button
               type="submit"
               className="px-5 py-3 bg-[#D48A96] text-[#2A1E23] uppercase tracking-widest text-xs font-bold"
             >
-              Check
+              {t(lang, 'scannerCheck')}
             </button>
           </form>
         </div>
@@ -493,27 +528,37 @@ function ScannerScreen({
                 <div className="grid grid-cols-3 gap-2 text-center">
                   <div className="bg-white/5 p-3">
                     <p className="text-3xl font-bold">{result.allowedCount}</p>
-                    <p className="text-[10px] uppercase tracking-widest opacity-60">Allowed</p>
+                    <p className="text-[10px] uppercase tracking-widest opacity-60">
+                      {t(lang, 'scannerAllowed')}
+                    </p>
                   </div>
                   <div className="bg-white/5 p-3">
                     <p className="text-3xl font-bold">{result.checkedIn}</p>
-                    <p className="text-[10px] uppercase tracking-widest opacity-60">Checked in</p>
+                    <p className="text-[10px] uppercase tracking-widest opacity-60">
+                      {t(lang, 'scannerCheckedIn')}
+                    </p>
                   </div>
                   <div className="bg-white/5 p-3">
                     <p className="text-3xl font-bold text-[#D48A96]">{result.remaining}</p>
-                    <p className="text-[10px] uppercase tracking-widest opacity-60">Remaining</p>
+                    <p className="text-[10px] uppercase tracking-widest opacity-60">
+                      {t(lang, 'scannerRemaining')}
+                    </p>
                   </div>
                 </div>
                 {result.rsvpStatus !== 'pending' && (
                   <p className="text-center text-xs opacity-70">
-                    RSVP: {result.rsvpStatus}
-                    {result.rsvpCount ? ` (${result.rsvpCount} expected)` : ''}
+                    {result.rsvpCount
+                      ? t(lang, 'scannerRsvpExpected', {
+                          status: result.rsvpStatus ?? '',
+                          n: result.rsvpCount,
+                        })
+                      : t(lang, 'scannerRsvpNoExpected', { status: result.rsvpStatus ?? '' })}
                   </p>
                 )}
 
                 <div>
                   <p className="text-center text-[10px] uppercase tracking-[0.2em] opacity-60 mb-2">
-                    Guests arriving now
+                    {t(lang, 'scannerGuestsArriving')}
                   </p>
                   <div className="flex items-center justify-center gap-6">
                     <button
@@ -534,7 +579,7 @@ function ScannerScreen({
                   </div>
                   {extraCount > 0 && (
                     <p className="text-center text-amber-400 text-xs mt-2 font-bold uppercase tracking-wide">
-                      ⚠ Exceeds remaining count — override required
+                      {t(lang, 'scannerExceeds')}
                     </p>
                   )}
                 </div>
@@ -542,7 +587,7 @@ function ScannerScreen({
                 {extraCount > 0 && (
                   <div className="space-y-2 border border-amber-500/40 bg-amber-500/5 p-4">
                     <p className="text-center text-amber-400 text-xs uppercase tracking-wide font-bold">
-                      Name{extraCount > 1 ? 's' : ''} of the {extraCount} extra guest{extraCount > 1 ? 's' : ''}
+                      {t(lang, 'scannerExtraNamesTitle', { n: extraCount })}
                     </p>
                     {Array.from({ length: extraCount }).map((_, i) => (
                       <input
@@ -557,7 +602,7 @@ function ScannerScreen({
                             return next;
                           });
                         }}
-                        placeholder={`Extra guest ${i + 1} name`}
+                        placeholder={t(lang, 'scannerExtraNamePlaceholder', { n: i + 1 })}
                         className="w-full px-3 py-3 bg-white/10 border border-amber-500/40 text-sm focus:outline-none"
                       />
                     ))}
@@ -567,18 +612,18 @@ function ScannerScreen({
                 {needsOverride ? (
                   <div className="space-y-3 border border-amber-500/60 bg-amber-500/10 p-4">
                     <p className="text-amber-400 font-bold text-center text-sm uppercase tracking-wide">
-                      Extra guest detected — approval required
+                      {t(lang, 'scannerOverrideNeeded')}
                     </p>
                     <input
                       value={overrideReason}
                       onChange={(e) => setOverrideReason(e.target.value)}
-                      placeholder="Reason for escalation (optional)"
+                      placeholder={t(lang, 'scannerOverrideReasonPlaceholder')}
                       className="w-full px-3 py-3 bg-white/10 border border-amber-500/50 text-sm focus:outline-none"
                     />
                     <input
                       value={overrideNote}
                       onChange={(e) => setOverrideNote(e.target.value)}
-                      placeholder="Guard note: who approved this? (required)"
+                      placeholder={t(lang, 'scannerOverrideNotePlaceholder')}
                       className="w-full px-3 py-3 bg-white/10 border border-amber-500/50 text-sm focus:outline-none"
                     />
                     <div className="flex gap-2">
@@ -591,13 +636,13 @@ function ScannerScreen({
                         onClick={() => checkIn(true)}
                         className="flex-1 py-3.5 bg-amber-600 text-white uppercase tracking-widest text-xs font-bold disabled:opacity-50"
                       >
-                        Override &amp; check in
+                        {t(lang, 'scannerOverrideCheckIn')}
                       </button>
                       <button
                         onClick={() => setNeedsOverride(false)}
                         className="px-5 py-3.5 border border-white/30 uppercase tracking-widest text-xs"
                       >
-                        Back
+                        {t(lang, 'scannerBack')}
                       </button>
                     </div>
                   </div>
@@ -607,7 +652,9 @@ function ScannerScreen({
                     onClick={() => checkIn(false)}
                     className="w-full py-4 bg-[#D48A96] text-[#2A1E23] uppercase tracking-widest text-sm font-bold disabled:opacity-50"
                   >
-                    {busy ? 'Checking in…' : `Check in ${count} ${count === 1 ? 'guest' : 'guests'}`}
+                    {busy
+                      ? t(lang, 'scannerCheckingIn')
+                      : t(lang, count === 1 ? 'scannerCheckInOne' : 'scannerCheckInMany', { n: count })}
                   </button>
                 )}
               </div>
@@ -618,7 +665,7 @@ function ScannerScreen({
                 onClick={reset}
                 className="w-full py-3 border border-white/25 uppercase tracking-widest text-xs opacity-80"
               >
-                Cancel / scan another
+                {t(lang, 'scannerCancelScanAnother')}
               </button>
             </div>
           </div>
@@ -626,7 +673,7 @@ function ScannerScreen({
 
         <section>
           <p className="text-[10px] uppercase tracking-[0.25em] opacity-50 mb-2">
-            Recent check-ins
+            {t(lang, 'scannerRecentCheckins')}
           </p>
           <div className="space-y-1.5">
             {(recentQuery.data?.checkins ?? []).map((c) => (
@@ -638,7 +685,7 @@ function ScannerScreen({
                   {c.guestName}
                   {c.isOverride && (
                     <span className="ml-2 text-amber-400 text-[10px] uppercase font-bold">
-                      override
+                      {t(lang, 'scannerOverrideBadge')}
                     </span>
                   )}
                 </span>
@@ -652,7 +699,7 @@ function ScannerScreen({
               </div>
             ))}
             {recentQuery.data?.checkins.length === 0 && (
-              <p className="text-xs opacity-40">No check-ins yet.</p>
+              <p className="text-xs opacity-40">{t(lang, 'scannerNoCheckinsYet')}</p>
             )}
           </div>
         </section>

@@ -250,6 +250,8 @@ const eventPatchSchema = z.object({
   status: z.enum(["draft", "live", "archived"]).optional(),
   autoApprove: z.boolean().optional(),
   guestbookPublic: z.boolean().optional(),
+  enableEnglish: z.boolean().optional(),
+  enableArabic: z.boolean().optional(),
   tablesEnabled: z.boolean().optional(),
   uploadsEnabled: z.boolean().optional(),
   maxUploadsPerGuest: z.number().int().min(1).max(20).optional(),
@@ -271,6 +273,12 @@ router.patch("/admin/event", requireAuth("admin"), async (req, res, next) => {
     const event = await currentEvent();
     if (!event) {
       res.status(404).json({ error: "No event configured" });
+      return;
+    }
+    const nextEnableEnglish = parsed.data.enableEnglish ?? event.enableEnglish;
+    const nextEnableArabic = parsed.data.enableArabic ?? event.enableArabic;
+    if (!nextEnableEnglish && !nextEnableArabic) {
+      res.status(400).json({ error: "At least one language must stay enabled" });
       return;
     }
     const { invitationConfig, ...rest } = parsed.data;

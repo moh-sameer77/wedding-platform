@@ -24,6 +24,8 @@ export const eventsTable = pgTable("events", {
   thankYouMessage: text("thank_you_message"),
   autoApprove: boolean("auto_approve").notNull().default(false),
   guestbookPublic: boolean("guestbook_public").notNull().default(false),
+  enableEnglish: boolean("enable_english").notNull().default(true),
+  enableArabic: boolean("enable_arabic").notNull().default(true),
   tablesEnabled: boolean("tables_enabled").notNull().default(false),
   uploadsEnabled: boolean("uploads_enabled").notNull().default(true),
   maxUploadsPerGuest: integer("max_uploads_per_guest").notNull().default(5),

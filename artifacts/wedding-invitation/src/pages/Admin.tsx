@@ -39,6 +39,8 @@ interface EventSettings {
   status: 'draft' | 'live' | 'archived';
   autoApprove: boolean;
   guestbookPublic: boolean;
+  enableEnglish: boolean;
+  enableArabic: boolean;
   uploadsEnabled: boolean;
   maxUploadsPerGuest: number;
   tablesEnabled: boolean;
@@ -374,18 +376,37 @@ function GuestsTab({ event }: { event: EventSettings | null }) {
     queryClient.invalidateQueries({ queryKey: ['admin-dashboard'] });
   };
 
+  // The Contact Picker API is Chromium-only (Chrome/Edge on Android, desktop
+  // Chrome/Edge) — no iOS browser supports it, since every iOS browser is a
+  // WebKit wrapper and WebKit has never implemented this API. Check both
+  // signals real support depends on, not just a truthy property, so a stray
+  // shim can't make this look supported when it isn't.
+  const contactPickerSupported = () =>
+    typeof navigator !== 'undefined' &&
+    'contacts' in navigator &&
+    'ContactsManager' in window &&
+    typeof (navigator as unknown as { contacts: { select?: unknown } }).contacts.select ===
+      'function';
+
   const pickContact = async () => {
-    const nav = navigator as Navigator & {
-      contacts?: { select: (props: string[], opts: { multiple: boolean }) => Promise<Array<{ name?: string[]; tel?: string[] }>> };
-    };
-    if (!nav.contacts) {
+    if (!contactPickerSupported()) {
       toast({
-        title: 'Not supported on this browser/device',
-        description: 'Contact picking needs Chrome on Android. Type the name and number instead.',
+        title: 'Not supported on this device',
+        description:
+          'Contact picking only works in Chrome or Edge on Android. iPhone (Safari or Chrome) and desktop browsers other than Chrome/Edge don’t support it — type the name and number instead.',
+        duration: 6000,
       });
       return;
     }
     try {
+      const nav = navigator as unknown as {
+        contacts: {
+          select: (
+            props: string[],
+            opts: { multiple: boolean },
+          ) => Promise<Array<{ name?: string[]; tel?: string[] }>>;
+        };
+      };
       const [contact] = await nav.contacts.select(['name', 'tel'], { multiple: false });
       if (!contact) return;
       setForm((f) => ({
@@ -393,8 +414,13 @@ function GuestsTab({ event }: { event: EventSettings | null }) {
         guestName: contact.name?.[0] || f.guestName,
         phone: contact.tel?.[0] || f.phone,
       }));
-    } catch {
-      // User cancelled the picker or denied permission — nothing to do.
+    } catch (e) {
+      // AbortError = the user cancelled the picker or denied permission — expected, no toast.
+      if (e instanceof DOMException && e.name === 'AbortError') return;
+      toast({
+        title: 'Could not open contacts',
+        description: e instanceof Error ? e.message : 'Type the name and number instead.',
+      });
     }
   };
 
@@ -517,8 +543,14 @@ function GuestsTab({ event }: { event: EventSettings | null }) {
               <button
                 type="button"
                 onClick={pickContact}
-                title="Pick from contacts"
-                className="px-3 border border-[#D48A96]/40 text-[#B25A6C] hover:bg-[#D48A96]/10 shrink-0"
+                title={
+                  contactPickerSupported()
+                    ? 'Pick from contacts'
+                    : 'Not supported on this device — Chrome/Edge on Android only'
+                }
+                className={`px-3 border border-[#D48A96]/40 hover:bg-[#D48A96]/10 shrink-0 ${
+                  contactPickerSupported() ? 'text-[#B25A6C]' : 'text-[#B25A6C]/40'
+                }`}
               >
                 📇
               </button>
@@ -1426,6 +1458,39 @@ function SettingsTab({ event }: { event: EventSettings | null }) {
           Archive mode turns every invitation link into the thank-you page with the approved
           photo album and guestbook.
         </p>
+      </section>
+
+      <section className="bg-[#F9F3F3] border border-[#D48A96]/30 p-5 space-y-4">
+        <div>
+          <h2 className="text-xs uppercase tracking-[0.25em] text-[#45383C]/50">Languages</h2>
+          <p className="text-[11px] opacity-55 mt-2">
+            Choose which language(s) guests can view the invitation in. At least one must stay on.
+            <br />
+            اختاروا اللغة (أو اللغتين) التي يمكن للضيوف مشاهدة الدعوة بها. يجب إبقاء لغة واحدة على الأقل مفعّلة.
+          </p>
+        </div>
+        <div className="flex gap-3">
+          <label className="flex items-center gap-2 text-sm rounded-2xl border border-[#D48A96]/25 bg-white/55 px-4 py-3 flex-1">
+            <input
+              type="checkbox"
+              checked={event.enableEnglish}
+              disabled={event.enableEnglish && !event.enableArabic}
+              onChange={(e) => save({ enableEnglish: e.target.checked })}
+              className="w-4 h-4 accent-[#B25A6C]"
+            />
+            English
+          </label>
+          <label className="flex items-center gap-2 text-sm rounded-2xl border border-[#D48A96]/25 bg-white/55 px-4 py-3 flex-1">
+            <input
+              type="checkbox"
+              checked={event.enableArabic}
+              disabled={event.enableArabic && !event.enableEnglish}
+              onChange={(e) => save({ enableArabic: e.target.checked })}
+              className="w-4 h-4 accent-[#B25A6C]"
+            />
+            العربية
+          </label>
+        </div>
       </section>
 
       <section className="bg-[#F9F3F3] border border-[#D48A96]/30 p-5 space-y-4">

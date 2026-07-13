@@ -392,6 +392,24 @@ export default function WeddingInvitation() {
   const topBg = backgrounds.top;
   const bottomBg = backgrounds.bottom;
   const tablesEnabled = event?.tablesEnabled ?? false;
+  const enableEnglish = event?.enableEnglish ?? true;
+  const enableArabic = event?.enableArabic ?? true;
+  const bothLangsEnabled = enableEnglish && enableArabic;
+
+  // If the couple disabled the language currently selected (e.g. via a stale
+  // ?lang=ar link), fall back to whichever language is still enabled.
+  useEffect(() => {
+    if (!event) return;
+    if (lang === 'ar' && !enableArabic) {
+      const params = new URLSearchParams(window.location.search);
+      params.delete('lang');
+      window.location.search = params.toString();
+    } else if (lang === 'en' && !enableEnglish && enableArabic) {
+      const params = new URLSearchParams(window.location.search);
+      params.set('lang', 'ar');
+      window.location.search = params.toString();
+    }
+  }, [event, lang, enableEnglish, enableArabic]);
 
   // Warm the browser's image cache for the card's garland art the moment we
   // know its URL, instead of only fetching it once the card mounts — the
@@ -443,7 +461,7 @@ export default function WeddingInvitation() {
         <LangToggle lang={lang} />
         <div className="max-w-md w-full bg-[#F9F3F3] border border-[#D48A96]/40 shadow-xl p-10 text-center relative">
           <div className="absolute inset-2 border-[0.5px] border-[#D48A96]/30 pointer-events-none" />
-          <p className="font-script text-3xl sm:text-4xl text-[#D48A96] mb-4">
+          <p className="font-script text-3xl sm:text-4xl text-[#8F4557] mb-4">
             {t(lang, 'invalidTitle')}
           </p>
           <p className="text-base sm:text-lg text-[#45383C]/75 leading-relaxed">
@@ -456,7 +474,7 @@ export default function WeddingInvitation() {
 
   return (
     <div className="min-h-[100dvh] w-full bg-[#F3E4E2] overflow-hidden relative selection:bg-[#D48A96]/30 font-serif">
-      <LangToggle lang={lang} />
+      {bothLangsEnabled && <LangToggle lang={lang} />}
       <div className="fixed inset-0 pointer-events-none z-0 opacity-20 mix-blend-multiply bg-[url('data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.65%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22 opacity=%220.06%22/%3E%3C/svg%3E')]" />
       {showContent && centerBg && (
         <motion.img
@@ -499,7 +517,7 @@ export default function WeddingInvitation() {
               >
                 <div className="absolute inset-2 border-[0.5px] border-[#D48A96]/40 pointer-events-none" />
                 <div className="w-full h-full flex flex-col items-center justify-center gap-1.5" dir={rtl ? 'rtl' : 'ltr'}>
-                  <p className="font-script text-3xl sm:text-4xl text-[#C4667A]">M &amp; R</p>
+                  <p className="font-script text-3xl sm:text-4xl text-[#8F4557]">M &amp; R</p>
                   <p className="text-xs sm:text-sm uppercase tracking-[0.3em] text-[#8F4557]/60">
                     {t(lang, 'youAreInvited')}
                   </p>
@@ -702,11 +720,11 @@ export default function WeddingInvitation() {
                               className="flex items-center gap-3 sm:gap-4 text-center mt-8 sm:mt-0"
                               initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.4 }} transition={{ duration: 0.9, ease: 'easeOut' }}
                             >
-                              <span className="text-[#D48A96] text-lg">✦</span>
+                              <span className="text-[#8F4557] text-lg">✦</span>
                               <p className="tracking-[0.22em] text-sm sm:text-base uppercase text-[#1A1516] font-medium">
                                 {t(lang, 'togetherWithFamilies')}
                               </p>
-                              <span className="text-[#D48A96] text-lg">✦</span>
+                              <span className="text-[#8F4557] text-lg">✦</span>
                             </motion.div>
 
                             <motion.div
@@ -724,7 +742,7 @@ export default function WeddingInvitation() {
                               </h1>
                               <div className="flex items-center justify-center gap-3 sm:gap-5 my-2 sm:my-4">
                                 <div className="w-10 sm:w-20 h-[0.5px] bg-gradient-to-r from-transparent to-[#D48A96]" />
-                                <span className="text-3xl sm:text-5xl text-[#D48A96] font-script drop-shadow-sm">
+                                <span className="text-3xl sm:text-5xl text-[#8F4557] font-script drop-shadow-sm">
                                   {rtl ? 'و' : '&'}
                                 </span>
                                 <div className="w-10 sm:w-20 h-[0.5px] bg-gradient-to-l from-transparent to-[#D48A96]" />
@@ -741,7 +759,7 @@ export default function WeddingInvitation() {
                               className="text-center max-w-sm mx-auto"
                               initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.4 }} transition={{ duration: 0.9, ease: 'easeOut' }}
                             >
-                              <p className="text-sm sm:text-base uppercase tracking-[0.2em] text-[#B25A6C] font-semibold mb-3">
+                              <p className="text-sm sm:text-base uppercase tracking-[0.2em] text-[#8F4557] font-semibold mb-3">
                                 {t(lang, 'honorEyebrow')}
                               </p>
 
@@ -773,13 +791,8 @@ export default function WeddingInvitation() {
                                   </React.Fragment>
                                 ))}
                               </p>
-                              {/* The blessing appears in the other language — a bilingual grace note */}
-                              <p
-                                dir={rtl ? 'ltr' : 'rtl'}
-                                lang={rtl ? 'en' : 'ar'}
-                                className="mt-4 text-lg sm:text-xl text-[#1A1516] leading-loose px-4"
-                              >
-                                {t(rtl ? 'en' : 'ar', 'blessing')}
+                              <p className="mt-4 text-lg sm:text-xl text-[#1A1516] leading-loose px-4">
+                                {t(lang, 'blessing')}
                               </p>
                             </motion.div>
                           </React.Fragment>
@@ -869,9 +882,9 @@ export default function WeddingInvitation() {
                                 href={MAPS_URL}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="flex-1 flex items-center justify-center gap-2 py-2.5 sm:py-3 border border-[#D48A96]/70 bg-transparent hover:bg-[#D48A96]/8 transition-colors text-[#1A1516] text-sm sm:text-base uppercase tracking-widest font-serif"
+                                className="flex-1 flex flex-col items-center justify-center gap-1.5 py-3 border border-[#D48A96]/70 bg-transparent hover:bg-[#D48A96]/8 transition-colors text-[#1A1516] text-sm sm:text-base uppercase tracking-widest font-serif text-center leading-tight"
                               >
-                                <svg className="w-3.5 h-3.5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                                <svg className="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                                   <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" />
                                   <circle cx="12" cy="9" r="2.5" />
                                 </svg>
@@ -881,9 +894,9 @@ export default function WeddingInvitation() {
                               <div className="flex-1 relative">
                                 <button
                                   onClick={() => setShowCalendar((v) => !v)}
-                                  className="w-full flex items-center justify-center gap-2 py-2.5 sm:py-3 border border-[#D48A96]/70 bg-transparent hover:bg-[#D48A96]/8 transition-colors text-[#1A1516] text-sm sm:text-base uppercase tracking-widest font-serif"
+                                  className="w-full flex flex-col items-center justify-center gap-1.5 py-3 border border-[#D48A96]/70 bg-transparent hover:bg-[#D48A96]/8 transition-colors text-[#1A1516] text-sm sm:text-base uppercase tracking-widest font-serif text-center leading-tight"
                                 >
-                                  <svg className="w-3.5 h-3.5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                                  <svg className="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                                     <rect x="3" y="4" width="18" height="18" rx="2" />
                                     <path d="M16 2v4M8 2v4M3 10h18" />
                                   </svg>
@@ -924,12 +937,12 @@ export default function WeddingInvitation() {
                                 initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.4 }} transition={{ duration: 0.9, ease: 'easeOut' }}
                               >
                                 <div className="inline-flex items-center gap-3 px-8 py-3.5 border-[0.5px] border-[#D48A96]/50 bg-[#FDF9F8] shadow-sm">
-                                  <span className="text-[#D48A96] text-lg">✦</span>
+                                  <span className="text-[#8F4557] text-lg">✦</span>
                                   <p className="text-sm sm:text-base uppercase tracking-[0.22em] text-[#1A1516]">
                                     {t(lang, 'yourTable')}&nbsp;·&nbsp;
                                     <span className="text-[#1A1516] font-semibold">{invitation.tableName}</span>
                                   </p>
-                                  <span className="text-[#D48A96] text-lg">✦</span>
+                                  <span className="text-[#8F4557] text-lg">✦</span>
                                 </div>
                               </motion.div>
                             )}
