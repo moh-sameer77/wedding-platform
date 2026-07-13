@@ -17,7 +17,7 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Eye, EyeOff, GripVertical, Image as ImageIcon, Mail, Pencil, RotateCcw, X } from 'lucide-react';
+import { Eye, EyeOff, GripVertical, Image as ImageIcon, Mail, Maximize2, Minimize2, Pencil, RotateCcw, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { api, type InviteDetails } from '@/lib/api';
 import InvitationCard from '@/components/InvitationCard';
@@ -291,6 +291,26 @@ export default function InvitationCms({
   const [artworkOpen, setArtworkOpen] = useState(false);
   const [uploadingBg, setUploadingBg] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [fullscreen, setFullscreen] = useState(false);
+
+  // While in full screen, lock the page behind and let Esc back out —
+  // closing an open popup first, then exiting full screen.
+  useEffect(() => {
+    if (!fullscreen) return;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      if (editingSection) setEditingSection(null);
+      else if (artworkOpen) setArtworkOpen(false);
+      else setFullscreen(false);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      window.removeEventListener('keydown', onKey);
+    };
+  }, [fullscreen, editingSection, artworkOpen]);
 
   // The preview card reads wording through t() exactly like the guest page,
   // so mirror the draft into the global overrides on every draft change.
@@ -389,58 +409,95 @@ export default function InvitationCms({
   const bottomBg = backgrounds.bottom;
 
   return (
-    <section className="bg-[#F9F3F3] border border-[#D48A96]/30 p-5 space-y-4">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h2 className="text-xs uppercase tracking-[0.25em] text-[#45383C]/50">
-            Invitation card — live editor
-          </h2>
-          <p className="text-[11px] opacity-55 mt-2 max-w-md leading-relaxed">
-            This is the exact card guests see. Hover a section (or tap on mobile) for its tools:
-            drag <GripVertical className="inline w-3 h-3 -mt-0.5" /> to reorder, pencil to edit the
-            wording in both languages, eye to hide or show it.
-          </p>
+    <section
+      className={
+        fullscreen
+          ? 'fixed inset-0 z-[70] bg-[#F9F3F3] overflow-y-auto'
+          : 'bg-[#F9F3F3] border border-[#D48A96]/30'
+      }
+    >
+      <div
+        className={
+          fullscreen
+            ? 'sticky top-0 z-[60] bg-[#F9F3F3]/95 backdrop-blur border-b border-[#D48A96]/25 px-4 sm:px-6 py-3 space-y-3'
+            : 'p-5 pb-0 space-y-4'
+        }
+      >
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h2 className="text-xs uppercase tracking-[0.25em] text-[#45383C]/50">
+              Invitation card — live editor
+            </h2>
+            {!fullscreen && (
+              <p className="text-[11px] opacity-55 mt-2 max-w-md leading-relaxed">
+                This is the exact card guests see. Hover a section (or tap on mobile) for its tools:
+                drag <GripVertical className="inline w-3 h-3 -mt-0.5" /> to reorder, pencil to edit the
+                wording in both languages, eye to hide or show it.
+              </p>
+            )}
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setEditingSection('envelope')}
+              className="flex items-center gap-1.5 px-3 py-2 border border-[#D48A96]/40 text-[#B25A6C] text-[11px] uppercase tracking-widest hover:bg-[#D48A96]/10"
+            >
+              <Mail className="w-3.5 h-3.5" /> Envelope text
+            </button>
+            <button
+              type="button"
+              onClick={() => setArtworkOpen(true)}
+              className="flex items-center gap-1.5 px-3 py-2 border border-[#D48A96]/40 text-[#B25A6C] text-[11px] uppercase tracking-widest hover:bg-[#D48A96]/10"
+            >
+              <ImageIcon className="w-3.5 h-3.5" /> Artwork
+            </button>
+            <button
+              type="button"
+              onClick={() => setFullscreen((v) => !v)}
+              title={fullscreen ? 'Exit full screen (Esc)' : 'Edit in full screen'}
+              className={`flex items-center gap-1.5 px-3 py-2 border text-[11px] uppercase tracking-widest ${
+                fullscreen
+                  ? 'border-[#45383C] bg-[#45383C] text-[#F9F3F3] hover:bg-[#45383C]/90'
+                  : 'border-[#D48A96]/40 text-[#B25A6C] hover:bg-[#D48A96]/10'
+              }`}
+            >
+              {fullscreen ? (
+                <>
+                  <Minimize2 className="w-3.5 h-3.5" /> Exit full screen
+                </>
+              ) : (
+                <>
+                  <Maximize2 className="w-3.5 h-3.5" /> Full screen
+                </>
+              )}
+            </button>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setEditingSection('envelope')}
-            className="flex items-center gap-1.5 px-3 py-2 border border-[#D48A96]/40 text-[#B25A6C] text-[11px] uppercase tracking-widest hover:bg-[#D48A96]/10"
-          >
-            <Mail className="w-3.5 h-3.5" /> Envelope text
-          </button>
-          <button
-            type="button"
-            onClick={() => setArtworkOpen(true)}
-            className="flex items-center gap-1.5 px-3 py-2 border border-[#D48A96]/40 text-[#B25A6C] text-[11px] uppercase tracking-widest hover:bg-[#D48A96]/10"
-          >
-            <ImageIcon className="w-3.5 h-3.5" /> Artwork
-          </button>
+
+        {/* Language tabs for the preview */}
+        <div className="flex items-center gap-1 w-fit border border-[#D48A96]/35 p-1 bg-white/60">
+          {([
+            ['en', 'English', enableEnglish],
+            ['ar', 'العربية', enableArabic],
+          ] as const).map(([code, label, enabled]) => (
+            <button
+              key={code}
+              type="button"
+              onClick={() => setPreviewLang(code)}
+              className={`px-4 py-1.5 text-xs uppercase tracking-[0.15em] transition-colors ${
+                previewLang === code
+                  ? 'bg-[#45383C] text-[#F9F3F3]'
+                  : 'text-[#45383C]/60 hover:bg-[#D48A96]/10'
+              }`}
+            >
+              {label}
+              {!enabled && ' (off)'}
+            </button>
+          ))}
         </div>
       </div>
 
-      {/* Language tabs for the preview */}
-      <div className="flex items-center gap-1 w-fit border border-[#D48A96]/35 p-1 bg-white/60">
-        {([
-          ['en', 'English', enableEnglish],
-          ['ar', 'العربية', enableArabic],
-        ] as const).map(([code, label, enabled]) => (
-          <button
-            key={code}
-            type="button"
-            onClick={() => setPreviewLang(code)}
-            className={`px-4 py-1.5 text-xs uppercase tracking-[0.15em] transition-colors ${
-              previewLang === code
-                ? 'bg-[#45383C] text-[#F9F3F3]'
-                : 'text-[#45383C]/60 hover:bg-[#D48A96]/10'
-            }`}
-          >
-            {label}
-            {!enabled && ' (off)'}
-          </button>
-        ))}
-      </div>
-
+      <div className={fullscreen ? 'px-4 sm:px-6 py-4 space-y-4' : 'p-5 pt-4 space-y-4'}>
       {/* The live card, wrapped in editing chrome */}
       <div className="border border-[#D48A96]/30 bg-[#F3E4E2] p-3 sm:p-6 overflow-hidden">
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
@@ -473,6 +530,7 @@ export default function InvitationCms({
         The personal greeting shows a sample guest ("{SAMPLE_INVITATION.guestName}") — each guest
         sees their own name and seat count.
       </p>
+      </div>
 
       {/* Sticky publish bar */}
       {dirty && (
