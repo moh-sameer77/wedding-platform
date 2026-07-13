@@ -25,8 +25,8 @@ const STRINGS = {
     ar: 'في ليلة يتكللها الفرح والسرور',
   },
   requestHonor: {
-    en: 'Sameer Mohammad Maghathe and Emad Abulhaija\nrequest the honor of your presence at their children’s wedding',
-    ar: 'يتشرف سمير محمد المغثة وعماد فخري أبو الهيجاء\nبدعوتكم لحضور حفل زفاف ولديهما',
+    en: 'Mr. Sameer Mohammad Maghathe and Mr. Emad Abulhaija\nrequest the honor of your presence at their children’s wedding',
+    ar: 'يتشرف السيد سمير محمد المغثة والسيد عماد فخري أبو الهيجاء\nبدعوتكم لحضور حفل زفاف ولديهما',
   },
   blessing: {
     en: 'With love and joy, we invite you to celebrate our wedding day with us, God willing.',
