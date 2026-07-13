@@ -106,6 +106,273 @@ interface AuditCheckin {
 
 type Tab = 'overview' | 'guests' | 'tables' | 'moderation' | 'team' | 'settings';
 
+type GuestImportRow = {
+  guestName: string;
+  phone?: string;
+  allowedCount: number;
+};
+
+type GuestImportIssue = {
+  row: number;
+  field: 'name' | 'phone' | 'seats' | 'row';
+  message: string;
+};
+
+type GuestImportReport = {
+  fileName: string;
+  delimiter: ',' | ';' | '\t';
+  headerMode: 'mapped' | 'positional';
+  imported: number;
+  skipped: number;
+  issues: GuestImportIssue[];
+};
+
+function decodeCsvBytes(bytes: Uint8Array): string {
+  const hasUtf8Bom = bytes.length >= 3 && bytes[0] === 0xef && bytes[1] === 0xbb && bytes[2] === 0xbf;
+  const hasUtf16LeBom = bytes.length >= 2 && bytes[0] === 0xff && bytes[1] === 0xfe;
+  const hasUtf16BeBom = bytes.length >= 2 && bytes[0] === 0xfe && bytes[1] === 0xff;
+
+  if (hasUtf8Bom) return new TextDecoder('utf-8').decode(bytes);
+  if (hasUtf16LeBom) return new TextDecoder('utf-16le').decode(bytes);
+  if (hasUtf16BeBom) return new TextDecoder('utf-16be').decode(bytes);
+
+  const utf8 = new TextDecoder('utf-8').decode(bytes);
+  if (!utf8.includes('\ufffd')) return utf8;
+
+  // Excel on Windows often saves Arabic CSV in the local ANSI code page.
+  return new TextDecoder('windows-1256').decode(bytes);
+}
+
+function normalizePhone(raw: string | undefined): string | undefined {
+  if (!raw) return undefined;
+  const value = raw.trim().replace(/^'+|"+|'+$/g, '');
+  if (!value) return undefined;
+
+  if (!/[eE]/.test(value)) return value;
+  if (!/^[+-]?\d+(?:\.\d+)?[eE][+-]?\d+$/.test(value)) return value;
+
+  const n = Number(value);
+  if (!Number.isFinite(n)) return value;
+
+  return n.toLocaleString('fullwide', {
+    useGrouping: false,
+    maximumFractionDigits: 20,
+  });
+}
+
+function normalizeHeaderValue(value: string): string {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/^\ufeff/, '')
+    .replace(/[_-]+/g, ' ')
+    .replace(/\s+/g, ' ');
+}
+
+function parseCsvLine(line: string, delimiter: ',' | ';' | '\t'): string[] {
+  const cells: string[] = [];
+  let current = '';
+  let inQuotes = false;
+
+  for (let i = 0; i < line.length; i += 1) {
+    const ch = line[i]!;
+    if (ch === '"') {
+      if (inQuotes && line[i + 1] === '"') {
+        current += '"';
+        i += 1;
+      } else {
+        inQuotes = !inQuotes;
+      }
+      continue;
+    }
+    if (ch === delimiter && !inQuotes) {
+      cells.push(current.trim());
+      current = '';
+      continue;
+    }
+    current += ch;
+  }
+
+  cells.push(current.trim());
+  return cells.map((cell) => cell.replace(/^"|"$/g, '').trim());
+}
+
+function countDelimiter(line: string, delimiter: ',' | ';' | '\t'): number {
+  let count = 0;
+  let inQuotes = false;
+  for (let i = 0; i < line.length; i += 1) {
+    const ch = line[i]!;
+    if (ch === '"') {
+      if (inQuotes && line[i + 1] === '"') {
+        i += 1;
+      } else {
+        inQuotes = !inQuotes;
+      }
+      continue;
+    }
+    if (ch === delimiter && !inQuotes) count += 1;
+  }
+  return count;
+}
+
+function detectCsvDelimiter(text: string): ',' | ';' | '\t' {
+  const candidates: Array<',' | ';' | '\t'> = [',', ';', '\t'];
+  const sample = text
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .slice(0, 5);
+
+  let best: ',' | ';' | '\t' = ',';
+  let bestScore = -1;
+  for (const delimiter of candidates) {
+    const score = sample.reduce((sum, line) => sum + countDelimiter(line, delimiter), 0);
+    if (score > bestScore) {
+      best = delimiter;
+      bestScore = score;
+    }
+  }
+  return best;
+}
+
+function isKnownHeader(value: string, aliases: string[]): boolean {
+  return aliases.includes(normalizeHeaderValue(value));
+}
+
+function parseSeatCount(raw: string | undefined): number | null {
+  if (!raw) return 1;
+  const normalized = raw.trim();
+  if (!normalized) return 1;
+  const n = Number(normalized);
+  if (!Number.isInteger(n) || n < 1 || n > 50) return null;
+  return n;
+}
+
+function buildGuestImportPreview(text: string): {
+  delimiter: ',' | ';' | '\t';
+  headerMode: 'mapped' | 'positional';
+  rows: GuestImportRow[];
+  skipped: number;
+  issues: GuestImportIssue[];
+} {
+  const delimiter = detectCsvDelimiter(text);
+  const lines = text
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+  const parsedLines = lines.map((line) => parseCsvLine(line, delimiter));
+  const issues: GuestImportIssue[] = [];
+  const rows: GuestImportRow[] = [];
+  const seen = new Set<string>();
+
+  if (parsedLines.length === 0) {
+    return { delimiter, headerMode: 'positional', rows: [], skipped: 0, issues: [] };
+  }
+
+  const nameHeaders = [
+    'name',
+    'guest name',
+    'guestname',
+    'guest',
+    'full name',
+    'family name',
+    'اسم',
+    'الاسم',
+    'اسم الضيف',
+    'اسم العائلة',
+  ];
+  const phoneHeaders = [
+    'phone',
+    'mobile',
+    'telephone',
+    'tel',
+    'whatsapp',
+    'number',
+    'رقم',
+    'الجوال',
+    'الهاتف',
+    'رقم الهاتف',
+    'رقم الجوال',
+  ];
+  const seatsHeaders = [
+    'seats',
+    'seat',
+    'allowed count',
+    'allowedcount',
+    'count',
+    'guest count',
+    'guests',
+    'invitees',
+    'المقاعد',
+    'عدد المقاعد',
+    'عدد الضيوف',
+    'عدد الحضور',
+  ];
+
+  const firstRow = parsedLines[0]!;
+  const headerIndexes = {
+    name: firstRow.findIndex((value) => isKnownHeader(value, nameHeaders)),
+    phone: firstRow.findIndex((value) => isKnownHeader(value, phoneHeaders)),
+    seats: firstRow.findIndex((value) => isKnownHeader(value, seatsHeaders)),
+  };
+
+  const hasMappedHeader = headerIndexes.name >= 0;
+  const startIndex = hasMappedHeader ? 1 : 0;
+  const headerMode: 'mapped' | 'positional' = hasMappedHeader ? 'mapped' : 'positional';
+
+  for (let i = startIndex; i < parsedLines.length; i += 1) {
+    const cols = parsedLines[i]!;
+    const rowNumber = i + 1;
+    const guestName = (hasMappedHeader ? cols[headerIndexes.name] : cols[0])?.trim() ?? '';
+    const phoneRaw = (hasMappedHeader && headerIndexes.phone >= 0 ? cols[headerIndexes.phone] : cols[1]) ?? '';
+    const seatsRaw = (hasMappedHeader && headerIndexes.seats >= 0 ? cols[headerIndexes.seats] : cols[2]) ?? '';
+
+    if (!guestName && !phoneRaw.trim() && !String(seatsRaw).trim()) continue;
+
+    if (!guestName) {
+      issues.push({ row: rowNumber, field: 'name', message: 'Missing guest name' });
+      continue;
+    }
+    if (guestName.length > 200) {
+      issues.push({ row: rowNumber, field: 'name', message: 'Name is longer than 200 characters' });
+      continue;
+    }
+
+    const phone = normalizePhone(phoneRaw);
+    if (phone && phone.length > 30) {
+      issues.push({ row: rowNumber, field: 'phone', message: 'Phone is longer than 30 characters' });
+      continue;
+    }
+
+    const allowedCount = parseSeatCount(seatsRaw);
+    if (allowedCount === null) {
+      issues.push({ row: rowNumber, field: 'seats', message: 'Seats must be a whole number between 1 and 50' });
+      continue;
+    }
+
+    const duplicateKey = `${guestName.toLowerCase()}|${phone ?? ''}`;
+    if (seen.has(duplicateKey)) {
+      issues.push({ row: rowNumber, field: 'row', message: 'Duplicate row in this file' });
+      continue;
+    }
+    seen.add(duplicateKey);
+
+    rows.push({
+      guestName,
+      phone,
+      allowedCount,
+    });
+  }
+
+  return {
+    delimiter,
+    headerMode,
+    rows,
+    skipped: issues.length,
+    issues,
+  };
+}
+
 // ---------- page ----------
 
 export default function AdminPage() {
@@ -324,6 +591,7 @@ function GuestsTab({ event }: { event: EventSettings | null }) {
   const me = getSessionUser();
   const [form, setForm] = useState({ guestName: '', phone: '', allowedCount: 2, tableId: '' });
   const [createdByFilter, setCreatedByFilter] = useState('all');
+  const [importReport, setImportReport] = useState<GuestImportReport | null>(null);
   const savedWhatsapp = normalizeInvitationConfig(event?.invitationConfig).whatsappMessage;
   const [whatsappDraft, setWhatsappDraft] = useState({
     en: savedWhatsapp?.en ?? DEFAULT_WHATSAPP_MESSAGE.en,
@@ -440,25 +708,48 @@ function GuestsTab({ event }: { event: EventSettings | null }) {
   };
 
   const importCsv = async (file: File) => {
-    const text = await file.text();
-    const rows = text
-      .split(/\r?\n/)
-      .map((line) => line.trim())
-      .filter(Boolean)
-      .map((line) => line.split(',').map((c) => c.trim().replace(/^"|"$/g, '')))
-      .filter((cols) => cols[0] && !/^(guest\s*)?name$/i.test(cols[0]))
-      .map((cols) => ({
-        guestName: cols[0]!,
-        phone: cols[1] || undefined,
-        allowedCount: Number(cols[2]) > 0 ? Number(cols[2]) : 1,
-      }));
-    if (rows.length === 0) {
-      toast({ title: 'No rows found', description: 'Expected columns: name, phone, allowed count' });
+    const text = decodeCsvBytes(new Uint8Array(await file.arrayBuffer()));
+    const preview = buildGuestImportPreview(text);
+
+    if (preview.rows.length === 0) {
+      setImportReport({
+        fileName: file.name,
+        delimiter: preview.delimiter,
+        headerMode: preview.headerMode,
+        imported: 0,
+        skipped: preview.skipped,
+        issues: preview.issues,
+      });
+      toast({
+        title: 'No valid rows to import',
+        description: preview.issues[0]?.message ?? 'Expected guest name, phone, and seats columns.',
+      });
       return;
     }
+
     try {
-      const res = await api.post<{ imported: number }>('/admin/invitations/import', { rows });
-      toast({ title: `Imported ${res.imported} guests`, duration: 4000 });
+      const res = await api.post<{ imported: number }>('/admin/invitations/import', {
+        rows: preview.rows,
+      });
+      setImportReport({
+        fileName: file.name,
+        delimiter: preview.delimiter,
+        headerMode: preview.headerMode,
+        imported: res.imported,
+        skipped: preview.skipped,
+        issues: preview.issues,
+      });
+      toast({
+        title:
+          preview.skipped > 0
+            ? `Imported ${res.imported} guests, skipped ${preview.skipped}`
+            : `Imported ${res.imported} guests`,
+        description:
+          preview.headerMode === 'mapped'
+            ? 'Header mapping detected automatically.'
+            : 'Imported using positional columns.',
+        duration: 5000,
+      });
       refresh();
     } catch (e) {
       toast({ title: 'Import failed', description: e instanceof Error ? e.message : '' });
@@ -608,9 +899,40 @@ function GuestsTab({ event }: { event: EventSettings | null }) {
             Export attendance CSV
           </a>
           <p className="text-[10px] opacity-50 self-center">
-            CSV columns: name, phone, seats. Table assignment is currently disabled.
+            Accepts UTF-8, Excel Arabic CSV, comma/semicolon/tab delimiters, and headers like name/phone/seats or Arabic equivalents.
           </p>
         </div>
+        {importReport && (
+          <div className="mt-4 border border-[#D48A96]/30 bg-white/70 p-4 text-xs">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+              <span className="uppercase tracking-[0.2em] text-[#45383C]/55">Last import</span>
+              <span>{importReport.fileName}</span>
+              <span>Imported: {importReport.imported}</span>
+              <span>Skipped: {importReport.skipped}</span>
+              <span>Format: {importReport.headerMode === 'mapped' ? 'Header mapped' : 'Positional columns'}</span>
+              <span>
+                Delimiter:{' '}
+                {importReport.delimiter === '\t'
+                  ? 'tab'
+                  : importReport.delimiter === ';'
+                    ? 'semicolon'
+                    : 'comma'}
+              </span>
+            </div>
+            {importReport.issues.length > 0 && (
+              <div className="mt-3 space-y-1 text-[#7A2E3E]">
+                {importReport.issues.slice(0, 8).map((issue, index) => (
+                  <p key={`${issue.row}-${issue.field}-${index}`}>
+                    Row {issue.row}: {issue.message}
+                  </p>
+                ))}
+                {importReport.issues.length > 8 && (
+                  <p>And {importReport.issues.length - 8} more skipped rows.</p>
+                )}
+              </div>
+            )}
+          </div>
+        )}
       </section>
 
       <section className="bg-[#F9F3F3] border border-[#D48A96]/30 p-4">
