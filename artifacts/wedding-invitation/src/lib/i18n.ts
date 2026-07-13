@@ -24,9 +24,14 @@ const STRINGS = {
     en: 'On an evening crowned with joy and delight',
     ar: 'في ليلة يتكللها الفرح والسرور',
   },
+  honorEyebrow: { en: 'have the honor of inviting you', ar: 'يتشرف' },
+  groomFatherTitle: { en: 'Mr.', ar: 'السيد' },
+  groomFatherName: { en: 'Sameer Mohammad Maghathe', ar: 'سمير محمد المغثة' },
+  brideFatherTitle: { en: 'Mr.', ar: 'السيد' },
+  brideFatherName: { en: 'Emad Abulhaija', ar: 'عماد فخري أبو الهيجاء' },
   requestHonor: {
-    en: 'Mr. Sameer Mohammad Maghathe and Mr. Emad Abulhaija\nrequest the honor of your presence at their children’s wedding',
-    ar: 'يتشرف السيد سمير محمد المغثة والسيد عماد فخري أبو الهيجاء\nبدعوتكم لحضور حفل زفاف ولديهما',
+    en: 'to the wedding celebration of their children',
+    ar: 'بدعوتكم لحضور حفل زفاف ولديهما',
   },
   blessing: {
     en: 'With love and joy, we invite you to celebrate our wedding day with us, God willing.',
@@ -232,6 +237,11 @@ export const SECTION_LABELS: Record<SectionId, string> = {
 /** Keys the couple can edit from the admin panel, with friendly labels. */
 export const EDITABLE_TEXTS: { key: StringKey; label: string }[] = [
   { key: 'togetherWithFamilies', label: 'Header eyebrow' },
+  { key: 'honorEyebrow', label: '"Have the honor" line' },
+  { key: 'groomFatherTitle', label: "Groom's father — title" },
+  { key: 'groomFatherName', label: "Groom's father — name" },
+  { key: 'brideFatherTitle', label: "Bride's father — title" },
+  { key: 'brideFatherName', label: "Bride's father — name" },
   { key: 'coupleGroom', label: 'Groom name' },
   { key: 'coupleBride', label: 'Bride name' },
   { key: 'requestHonor', label: 'Invitation line' },
@@ -252,7 +262,21 @@ export const EDITABLE_TEXTS: { key: StringKey; label: string }[] = [
  * text shown before the card opens. */
 export const TEXT_GROUPS: { id: SectionId | 'envelope'; keys: StringKey[] }[] = [
   { id: 'envelope', keys: ['breakSeal'] },
-  { id: 'header', keys: ['togetherWithFamilies', 'coupleGroom', 'coupleBride', 'requestHonor', 'blessing'] },
+  {
+    id: 'header',
+    keys: [
+      'togetherWithFamilies',
+      'honorEyebrow',
+      'groomFatherTitle',
+      'groomFatherName',
+      'brideFatherTitle',
+      'brideFatherName',
+      'coupleGroom',
+      'coupleBride',
+      'requestHonor',
+      'blessing',
+    ],
+  },
   { id: 'date', keys: ['dateLine'] },
   { id: 'venue', keys: ['venueName', 'venueTime', 'noChildren'] },
   { id: 'countdown', keys: ['countingDown'] },

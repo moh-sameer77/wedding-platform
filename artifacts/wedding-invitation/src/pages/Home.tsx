@@ -741,6 +741,30 @@ export default function WeddingInvitation() {
                               className="text-center max-w-sm mx-auto"
                               initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.4 }} transition={{ duration: 0.9, ease: 'easeOut' }}
                             >
+                              <p className="text-sm sm:text-base uppercase tracking-[0.2em] text-[#B25A6C] font-semibold mb-3">
+                                {t(lang, 'honorEyebrow')}
+                              </p>
+
+                              {/* Fathers' names — highlighted, standing apart from the body copy */}
+                              <div className="flex items-start justify-center gap-8 sm:gap-14 mb-4">
+                                <div>
+                                  <p className="text-xs sm:text-sm uppercase tracking-widest text-[#1A1516]/55 mb-1">
+                                    {t(lang, 'groomFatherTitle')}
+                                  </p>
+                                  <p className="text-lg sm:text-xl font-bold text-[#8F4557] font-serif leading-snug">
+                                    {t(lang, 'groomFatherName')}
+                                  </p>
+                                </div>
+                                <div>
+                                  <p className="text-xs sm:text-sm uppercase tracking-widest text-[#1A1516]/55 mb-1">
+                                    {t(lang, 'brideFatherTitle')}
+                                  </p>
+                                  <p className="text-lg sm:text-xl font-bold text-[#8F4557] font-serif leading-snug">
+                                    {t(lang, 'brideFatherName')}
+                                  </p>
+                                </div>
+                              </div>
+
                               <p className="text-lg sm:text-xl text-[#1A1516] leading-relaxed font-serif px-4">
                                 {t(lang, 'requestHonor').split('\n').map((line, i) => (
                                   <React.Fragment key={i}>
@@ -778,13 +802,24 @@ export default function WeddingInvitation() {
                                 {invitation.guestName}
                               </p>
                               <p className="text-base sm:text-lg font-bold text-[#1A1516] tracking-wide">
-                                {t(lang, 'seatsReserved', {
-                                  n: invitation.allowedCount,
-                                  seats:
+                                {(() => {
+                                  const seatsWord =
                                     invitation.allowedCount === 1
                                       ? t(lang, 'seatOne')
-                                      : t(lang, 'seatMany'),
-                                })}
+                                      : t(lang, 'seatMany');
+                                  const [before, after] = t(lang, 'seatsReserved', {
+                                    seats: seatsWord,
+                                  }).split('{n}');
+                                  return (
+                                    <>
+                                      {before}
+                                      <span className="text-2xl sm:text-3xl text-[#8F4557]">
+                                        {invitation.allowedCount}
+                                      </span>
+                                      {after}
+                                    </>
+                                  );
+                                })()}
                               </p>
                             </div>
                           </motion.div>
@@ -1507,7 +1542,18 @@ function RsvpSection({
             </button>
           </div>
           <p className="text-sm sm:text-base uppercase tracking-[0.22em] font-bold text-[#1A1516]">
-            {t(lang, 'upToGuests', { n: invitation.allowedCount })}
+            {(() => {
+              const [before, after] = t(lang, 'upToGuests', {}).split('{n}');
+              return (
+                <>
+                  {before}
+                  <span className="text-lg sm:text-xl text-[#8F4557]">
+                    {invitation.allowedCount}
+                  </span>
+                  {after}
+                </>
+              );
+            })()}
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <button
