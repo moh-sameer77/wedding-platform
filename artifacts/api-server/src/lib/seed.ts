@@ -67,31 +67,7 @@ export async function ensureSeedData(): Promise<void> {
     logger.info("Seeded admin and guard accounts");
   }
 
-  const invitations = await db.select().from(invitationsTable).limit(1);
-  if (invitations.length === 0) {
-    await db.insert(invitationsTable).values([
-      {
-        eventId,
-        guestName: "Ahmad Family",
-        phone: "+962790000001",
-        allowedCount: 4,
-        token: generateToken(),
-      },
-      {
-        eventId,
-        guestName: "Sara & Omar",
-        phone: "+962790000002",
-        allowedCount: 2,
-        token: generateToken(),
-      },
-      {
-        eventId,
-        guestName: "Khaled",
-        phone: "+962790000003",
-        allowedCount: 1,
-        token: generateToken(),
-      },
-    ]);
-    logger.info("Seeded sample invitations");
-  }
+  // Never auto-create guest invitations. An empty guest list is a valid
+  // production state after a reset, and seeding sample guests on boot would
+  // silently repopulate live data.
 }
