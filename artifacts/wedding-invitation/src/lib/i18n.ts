@@ -338,22 +338,38 @@ export const EDITABLE_TEXTS: { key: StringKey; label: string }[] = [
   { key: 'coupleBride', label: 'Bride name' },
   { key: 'requestHonor', label: 'Invitation line' },
   { key: 'blessing', label: 'Blessing line' },
+  { key: 'especiallyFor', label: '"Especially for" label' },
+  { key: 'seatsReserved', label: 'Seats reserved line' },
   { key: 'dateLine', label: 'Date line' },
   { key: 'venueName', label: 'Venue name' },
   { key: 'venueTime', label: 'Time line' },
   { key: 'noChildren', label: 'Adults-only note' },
+  { key: 'getDirections', label: 'Directions button' },
+  { key: 'addToCalendar', label: 'Calendar button' },
   { key: 'countingDown', label: 'Countdown caption' },
+  { key: 'rsvpTitle', label: 'RSVP title' },
   { key: 'willYouJoin', label: 'RSVP question' },
+  { key: 'joyfullyAccepts', label: 'Accept button' },
+  { key: 'regretfullyDeclines', label: 'Decline button' },
+  { key: 'nuqootTitle', label: 'Nuqoot title' },
   { key: 'nuqootBody', label: 'Nuqoot message' },
+  { key: 'cliqNote', label: 'CliQ note' },
   { key: 'breakSeal', label: 'Envelope hint' },
+  { key: 'youAreInvited', label: '"You are invited" (card in envelope)' },
+  { key: 'dearName', label: 'Envelope — guest name line' },
+  { key: 'withLoveTo', label: 'Envelope label (no guest name)' },
+  { key: 'belovedGuests', label: 'Envelope fallback name' },
 ];
 
 /** Groups the editable text keys under the card section they appear in, so
  * the admin editor can lay them out in the same order the guest sees them.
- * 'envelope' isn't a real section (it's not toggleable) but groups the one
- * text shown before the card opens. */
+ * 'envelope' isn't a real section (it's not toggleable) but groups the
+ * texts shown before the card opens. */
 export const TEXT_GROUPS: { id: SectionId | 'envelope'; keys: StringKey[] }[] = [
-  { id: 'envelope', keys: ['breakSeal'] },
+  {
+    id: 'envelope',
+    keys: ['breakSeal', 'especiallyFor', 'dearName', 'withLoveTo', 'belovedGuests', 'youAreInvited'],
+  },
   {
     id: 'header',
     keys: [
@@ -369,11 +385,12 @@ export const TEXT_GROUPS: { id: SectionId | 'envelope'; keys: StringKey[] }[] = 
       'blessing',
     ],
   },
+  { id: 'greeting', keys: ['especiallyFor', 'seatsReserved'] },
   { id: 'date', keys: ['dateLine'] },
-  { id: 'venue', keys: ['venueName', 'venueTime', 'noChildren'] },
+  { id: 'venue', keys: ['venueName', 'venueTime', 'noChildren', 'getDirections', 'addToCalendar'] },
   { id: 'countdown', keys: ['countingDown'] },
-  { id: 'rsvp', keys: ['willYouJoin'] },
-  { id: 'nuqoot', keys: ['nuqootBody'] },
+  { id: 'rsvp', keys: ['rsvpTitle', 'willYouJoin', 'joyfullyAccepts', 'regretfullyDeclines'] },
+  { id: 'nuqoot', keys: ['nuqootTitle', 'nuqootBody', 'cliqNote'] },
 ];
 
 /** Merge stored config with defaults (unknown/missing sections appended). */

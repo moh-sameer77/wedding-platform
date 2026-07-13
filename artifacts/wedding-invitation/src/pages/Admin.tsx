@@ -1,20 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import LoginGate from '@/components/LoginGate';
+import InvitationCms, { normalizeInvitationConfig } from '@/components/InvitationCms';
 import { useToast } from '@/hooks/use-toast';
 import { api, getSessionToken, getSessionUser, publicUrl } from '@/lib/api';
 import { usePageTitle } from '@/hooks/use-page-title';
-import {
-  DEFAULT_SECTIONS,
-  DEFAULT_WHATSAPP_MESSAGE,
-  EDITABLE_TEXTS,
-  SECTION_LABELS,
-  TEXT_GROUPS,
-  defaultText,
-  resolveSections,
-  type InvitationConfig,
-  type SectionId,
-} from '@/lib/i18n';
+import { DEFAULT_WHATSAPP_MESSAGE } from '@/lib/i18n';
 
 // ---------- types ----------
 
@@ -393,8 +384,8 @@ function GuestsTab({ event }: { event: EventSettings | null }) {
       toast({
         title: 'Not supported on this device',
         description:
-          'Contact picking only works in Chrome or Edge on Android. iPhone (Safari or Chrome) and desktop browsers other than Chrome/Edge don’t support it — type the name and number instead.',
-        duration: 6000,
+          'This picker button only works in Chrome or Edge on Android — iOS (Safari, Chrome, or any iPhone browser) can’t support it. Tap into the name/phone fields instead: your iPhone keyboard will suggest matching contacts above the keyboard as you type.',
+        duration: 7000,
       });
       return;
     }
@@ -527,6 +518,7 @@ function GuestsTab({ event }: { event: EventSettings | null }) {
             <input
               value={form.guestName}
               onChange={(e) => setForm({ ...form, guestName: e.target.value })}
+              autoComplete="name"
               className="w-full px-3 py-2.5 border border-[#D48A96]/40 bg-white/70 focus:outline-none focus:border-[#B25A6C]"
               placeholder="Ahmad Family"
             />
@@ -537,6 +529,9 @@ function GuestsTab({ event }: { event: EventSettings | null }) {
               <input
                 value={form.phone}
                 onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                type="tel"
+                inputMode="tel"
+                autoComplete="tel"
                 className="w-full px-3 py-2.5 border border-[#D48A96]/40 bg-white/70 focus:outline-none focus:border-[#B25A6C]"
                 placeholder="+9627…"
               />
@@ -546,7 +541,7 @@ function GuestsTab({ event }: { event: EventSettings | null }) {
                 title={
                   contactPickerSupported()
                     ? 'Pick from contacts'
-                    : 'Not supported on this device — Chrome/Edge on Android only'
+                    : 'Not supported on iOS/this browser — Chrome/Edge on Android only. Type into the fields instead; iPhone will suggest contacts above the keyboard.'
                 }
                 className={`px-3 border border-[#D48A96]/40 hover:bg-[#D48A96]/10 shrink-0 ${
                   contactPickerSupported() ? 'text-[#B25A6C]' : 'text-[#B25A6C]/40'
@@ -1278,30 +1273,6 @@ function ModerationTab() {
 
 // ---------- settings ----------
 
-const EMPTY_INVITATION_CONFIG: InvitationConfig = {
-  sections: DEFAULT_SECTIONS,
-  texts: {},
-  backgrounds: {},
-};
-
-function normalizeInvitationConfig(value: unknown): InvitationConfig {
-  let raw = value;
-  if (typeof value === 'string' && value.trim()) {
-    try {
-      raw = JSON.parse(value);
-    } catch {
-      raw = null;
-    }
-  }
-  const config =
-    raw && typeof raw === 'object' ? (raw as InvitationConfig) : EMPTY_INVITATION_CONFIG;
-  return {
-    sections: resolveSections(config),
-    texts: config.texts ?? {},
-    backgrounds: config.backgrounds ?? {},
-  };
-}
-
 function SettingsTab({ event }: { event: EventSettings | null }) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -1309,28 +1280,6 @@ function SettingsTab({ event }: { event: EventSettings | null }) {
   const [thanks, setThanks] = useState<string | null>(null);
   const [uploadsEnabled, setUploadsEnabled] = useState(true);
   const [maxUploadsPerGuest, setMaxUploadsPerGuest] = useState(5);
-  const [configDraft, setConfigDraft] = useState<InvitationConfig>(
-    EMPTY_INVITATION_CONFIG,
-  );
-  const [uploadingBg, setUploadingBg] = useState<
-    keyof NonNullable<InvitationConfig['backgrounds']> | null
-  >(null);
-
-  useEffect(() => {
-    if (!event) return;
-    const normalized = normalizeInvitationConfig(event.invitationConfig);
-    // Seed every editable field with real text — the couple's own custom
-    // wording if they've saved any, otherwise the built-in default copy —
-    // so the editor always shows what's actually live, never a blank box.
-    const texts = { ...(normalized.texts ?? {}) };
-    for (const { key } of EDITABLE_TEXTS) {
-      texts[key] = {
-        en: texts[key]?.en ?? defaultText('en', key),
-        ar: texts[key]?.ar ?? defaultText('ar', key),
-      };
-    }
-    setConfigDraft({ ...normalized, texts });
-  }, [event?.id, event?.invitationConfig]);
 
   useEffect(() => {
     if (!event) return;
@@ -1347,81 +1296,6 @@ function SettingsTab({ event }: { event: EventSettings | null }) {
       toast({ title: 'Settings saved', duration: 2500 });
     } catch (e) {
       toast({ title: 'Save failed', description: e instanceof Error ? e.message : '' });
-    }
-  };
-
-  const setSection = (id: SectionId, patch: Partial<{ enabled: boolean }>) => {
-    setConfigDraft((current) => ({
-      ...current,
-      sections: resolveSections(current).map((section) =>
-        section.id === id ? { ...section, ...patch } : section,
-      ),
-    }));
-  };
-
-  const moveSection = (id: SectionId, direction: -1 | 1) => {
-    setConfigDraft((current) => {
-      const sections = resolveSections(current);
-      const index = sections.findIndex((section) => section.id === id);
-      const nextIndex = index + direction;
-      if (index < 0 || nextIndex < 0 || nextIndex >= sections.length) return current;
-      const next = [...sections];
-      const [item] = next.splice(index, 1);
-      next.splice(nextIndex, 0, item!);
-      return { ...current, sections: next };
-    });
-  };
-
-  /** Re-adds a removed section at the end of the card, shown again. */
-  const addSection = (id: SectionId) => {
-    setConfigDraft((current) => {
-      const others = resolveSections(current).filter((section) => section.id !== id);
-      return { ...current, sections: [...others, { id, enabled: true }] };
-    });
-  };
-
-  const setText = (key: string, lang: 'en' | 'ar', value: string) => {
-    setConfigDraft((current) => ({
-      ...current,
-      texts: {
-        ...(current.texts ?? {}),
-        [key]: {
-          ...(current.texts?.[key] ?? {}),
-          [lang]: value,
-        },
-      },
-    }));
-  };
-
-  const setBackground = (
-    key: keyof NonNullable<InvitationConfig['backgrounds']>,
-    value: string | null | undefined,
-  ) => {
-    setConfigDraft((current) => ({
-      ...current,
-      backgrounds: {
-        ...(current.backgrounds ?? {}),
-        [key]: value,
-      },
-    }));
-  };
-
-  const uploadBackground = async (
-    key: keyof NonNullable<InvitationConfig['backgrounds']>,
-    file: File | undefined,
-  ) => {
-    if (!file) return;
-    setUploadingBg(key);
-    try {
-      const fd = new FormData();
-      fd.append('file', file);
-      const result = await api.post<{ url: string }>('/admin/asset', fd);
-      setBackground(key, result.url);
-      toast({ title: 'Image uploaded', duration: 2500 });
-    } catch (e) {
-      toast({ title: 'Upload failed', description: e instanceof Error ? e.message : '' });
-    } finally {
-      setUploadingBg(null);
     }
   };
 
@@ -1655,178 +1529,12 @@ function SettingsTab({ event }: { event: EventSettings | null }) {
         </button>
       </section>
 
-      <section className="bg-[#F9F3F3] border border-[#D48A96]/30 p-5 space-y-5">
-        <div>
-          <h2 className="text-xs uppercase tracking-[0.25em] text-[#45383C]/50">Invitation card editor</h2>
-          <p className="text-[11px] opacity-55 mt-2">
-            This shows exactly what's live on the card right now — edit it directly. Save applies to
-            both public and personal invitation links.
-          </p>
-        </div>
-
-        {(() => {
-          const allSections = resolveSections(configDraft);
-          const shown = allSections.filter((s) => s.enabled);
-          const hidden = allSections.filter((s) => !s.enabled);
-          const enabledMap = new Map(allSections.map((s) => [s.id, s.enabled]));
-          return (
-            <>
-              <div>
-                <h3 className="text-[10px] uppercase tracking-widest opacity-60 mb-2">
-                  Sections on your card
-                </h3>
-                <div className="space-y-2">
-                  {shown.map((section, index) => (
-                    <div
-                      key={section.id}
-                      className="flex items-center gap-2 bg-white/55 border border-[#D48A96]/25 px-3 py-2"
-                    >
-                      <span className="flex-1 text-sm">{SECTION_LABELS[section.id]}</span>
-                      <button
-                        type="button"
-                        disabled={index === 0}
-                        onClick={() => moveSection(section.id, -1)}
-                        className="px-2 py-1 border border-[#D48A96]/35 text-xs disabled:opacity-30"
-                      >
-                        Up
-                      </button>
-                      <button
-                        type="button"
-                        disabled={index === shown.length - 1}
-                        onClick={() => moveSection(section.id, 1)}
-                        className="px-2 py-1 border border-[#D48A96]/35 text-xs disabled:opacity-30"
-                      >
-                        Down
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setSection(section.id, { enabled: false })}
-                        title="Remove from card"
-                        className="px-2 py-1 border border-red-800/25 text-red-800/70 text-xs hover:bg-red-800/5"
-                      >
-                        ✕ Remove
-                      </button>
-                    </div>
-                  ))}
-                  {shown.length === 0 && (
-                    <p className="text-xs opacity-50 italic">
-                      No sections on the card — add one below.
-                    </p>
-                  )}
-                </div>
-                {hidden.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mt-3">
-                    {hidden.map((section) => (
-                      <button
-                        key={section.id}
-                        type="button"
-                        onClick={() => addSection(section.id)}
-                        className="px-3 py-1.5 border border-[#D48A96]/40 text-[#B25A6C] text-xs hover:bg-[#D48A96]/10"
-                      >
-                        + Add {SECTION_LABELS[section.id]}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              <div>
-                <h3 className="text-[10px] uppercase tracking-widest opacity-60 mb-2">Card wording</h3>
-                <div className="space-y-4">
-                  {TEXT_GROUPS.map((group) => {
-                    const groupLabel =
-                      group.id === 'envelope' ? 'Envelope (before opening)' : SECTION_LABELS[group.id];
-                    const isHidden = group.id !== 'envelope' && enabledMap.get(group.id) === false;
-                    return (
-                      <div
-                        key={group.id}
-                        className="bg-[#FDF9F8] border border-[#D48A96]/30 p-4 space-y-3"
-                      >
-                        <p className="text-[10px] uppercase tracking-widest text-[#B25A6C] font-semibold">
-                          {groupLabel}
-                          {isHidden && <span className="ml-2 text-[#45383C]/40">(currently hidden)</span>}
-                        </p>
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-                          {group.keys.map((key) => {
-                            const label = EDITABLE_TEXTS.find((e) => e.key === key)?.label ?? key;
-                            return (
-                              <div key={key}>
-                                <p className="text-[10px] uppercase tracking-widest opacity-50 mb-1">{label}</p>
-                                <textarea
-                                  rows={2}
-                                  value={configDraft.texts?.[key]?.en ?? ''}
-                                  onChange={(e) => setText(key, 'en', e.target.value)}
-                                  className="w-full px-3 py-2 border border-[#D48A96]/30 bg-white text-sm font-serif focus:outline-none focus:border-[#B25A6C]"
-                                />
-                                <textarea
-                                  rows={2}
-                                  dir="rtl"
-                                  value={configDraft.texts?.[key]?.ar ?? ''}
-                                  onChange={(e) => setText(key, 'ar', e.target.value)}
-                                  className="w-full mt-2 px-3 py-2 border border-[#D48A96]/30 bg-white text-sm font-serif focus:outline-none focus:border-[#B25A6C]"
-                                />
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            </>
-          );
-        })()}
-
-        <div>
-          <h3 className="text-[10px] uppercase tracking-widest opacity-60 mb-2">Background images</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            {(['top', 'center', 'bottom'] as const).map((key) => (
-              <div key={key} className="bg-white/55 border border-[#D48A96]/25 p-3 space-y-2">
-                <p className="text-[10px] uppercase tracking-widest opacity-60">{key} image</p>
-                <input
-                  value={configDraft.backgrounds?.[key] ?? ''}
-                  onChange={(e) => setBackground(key, e.target.value || undefined)}
-                  placeholder={key === 'center' ? '/faded-transparent-floral-background.png' : 'Default garland'}
-                  className="w-full px-3 py-2 border border-[#D48A96]/30 bg-white/80 text-xs focus:outline-none focus:border-[#B25A6C]"
-                />
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => {
-                    uploadBackground(key, e.target.files?.[0]);
-                    e.target.value = '';
-                  }}
-                  className="w-full text-xs"
-                />
-                <button
-                  type="button"
-                  onClick={() => setBackground(key, null)}
-                  className="text-xs underline underline-offset-2 text-[#B25A6C]"
-                >
-                  Hide this image
-                </button>
-                {uploadingBg === key && <p className="text-xs opacity-55">Uploading...</p>}
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="flex gap-3 flex-wrap">
-          <button
-            onClick={() => save({ invitationConfig: configDraft })}
-            className="px-6 py-2.5 bg-gradient-to-br from-[#D48A96] to-[#B25A6C] text-[#F9F3F3] uppercase tracking-widest text-xs font-semibold"
-          >
-            Save invitation card
-          </button>
-          <button
-            onClick={() => setConfigDraft(EMPTY_INVITATION_CONFIG)}
-            className="px-6 py-2.5 border border-[#D48A96]/50 text-[#B25A6C] uppercase tracking-widest text-xs"
-          >
-            Reset draft
-          </button>
-        </div>
-      </section>
+      <InvitationCms
+        invitationConfig={event.invitationConfig}
+        enableEnglish={event.enableEnglish}
+        enableArabic={event.enableArabic}
+        tablesEnabled={event.tablesEnabled}
+      />
 
       <section className="bg-[#F9F3F3] border border-[#D48A96]/30 p-5">
         <h2 className="text-xs uppercase tracking-[0.25em] text-[#45383C]/50 mb-3">Staff accounts</h2>
