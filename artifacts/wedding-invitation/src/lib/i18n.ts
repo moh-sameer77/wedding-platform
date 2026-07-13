@@ -21,16 +21,16 @@ const STRINGS = {
   coupleGroom: { en: 'Mohammad', ar: 'محمد' },
   coupleBride: { en: 'Renad', ar: 'رناد' },
   togetherWithFamilies: {
-    en: 'Together with their families',
-    ar: 'بمشاركة عائلتيهما الكريمتين',
+    en: 'On an evening crowned with joy and delight',
+    ar: 'في ليلة يتكللها الفرح والسرور',
   },
   requestHonor: {
-    en: 'joyfully request the honor of your presence\nat their wedding celebration',
-    ar: 'يتشرفان بدعوتكم لمشاركتهما\nفرحة حفل زفافهما',
+    en: 'Sameer Mohammad Maghathe and Emad Abulhaija\nrequest the honor of your presence at their children’s wedding',
+    ar: 'يتشرف سمير محمد المغثة وعماد فخري أبو الهيجاء\nبدعوتكم لحضور حفل زفاف ولديهما',
   },
   blessing: {
-    en: 'With love and joy, we invite you to celebrate our wedding day with us.',
-    ar: 'بكل حب وسعادة، نتشرف بدعوتكم لمشاركتنا فرحتنا في يوم زفافنا',
+    en: 'With love and joy, we invite you to celebrate our wedding day with us, God willing.',
+    ar: 'بكل حب وسعادة، نتشرف بدعوتكم لمشاركتنا فرحتنا في يوم زفافنا، وذلك بمشيئة الله',
   },
 
   // Personalized greeting
