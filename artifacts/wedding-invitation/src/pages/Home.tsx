@@ -339,9 +339,11 @@ export default function WeddingInvitation() {
                 <div className="absolute inset-2 border-[0.5px] border-[#D48A96]/40 pointer-events-none" />
                 <div className="w-full h-full flex flex-col items-center justify-center gap-1.5" dir={rtl ? 'rtl' : 'ltr'}>
                   <p className="font-script text-3xl sm:text-4xl text-[#8F4557]">M &amp; R</p>
-                  <p className="text-xs sm:text-sm uppercase tracking-[0.3em] text-[#8F4557]/60">
-                    {t(lang, 'youAreInvited')}
-                  </p>
+                  {t(lang, 'youAreInvited').trim() && (
+                    <p className="text-xs sm:text-sm uppercase tracking-[0.3em] text-[#8F4557]/60">
+                      {t(lang, 'youAreInvited')}
+                    </p>
+                  )}
                 </div>
               </motion.div>
 
@@ -384,14 +386,18 @@ export default function WeddingInvitation() {
                   transition={{ duration: 0.7, delay: isOpen ? 0 : 0.3 }}
                   dir={rtl ? 'rtl' : 'ltr'}
                 >
-                  <p className="text-xs sm:text-sm uppercase tracking-[0.3em] text-[#8F4557]/65 mb-0.5">
-                    {firstName ? t(lang, 'especiallyFor') : t(lang, 'withLoveTo')}
-                  </p>
-                  <p className="font-script text-2xl sm:text-3xl text-[#8F4557] leading-normal max-w-full truncate">
-                    {firstName
-                      ? t(lang, 'dearName', { name: firstName })
-                      : t(lang, 'belovedGuests')}
-                  </p>
+                  {(firstName ? t(lang, 'especiallyFor') : t(lang, 'withLoveTo')).trim() && (
+                    <p className="text-xs sm:text-sm uppercase tracking-[0.3em] text-[#8F4557]/65 mb-0.5">
+                      {firstName ? t(lang, 'especiallyFor') : t(lang, 'withLoveTo')}
+                    </p>
+                  )}
+                  {(firstName ? t(lang, 'dearName', { name: firstName }) : t(lang, 'belovedGuests')).trim() && (
+                    <p className="font-script text-2xl sm:text-3xl text-[#8F4557] leading-normal max-w-full truncate">
+                      {firstName
+                        ? t(lang, 'dearName', { name: firstName })
+                        : t(lang, 'belovedGuests')}
+                    </p>
+                  )}
                 </motion.div>
 
                 {/* Top flap — lifts open like a real envelope lid */}
@@ -476,7 +482,7 @@ export default function WeddingInvitation() {
               </motion.div>
             </motion.div>
 
-            {!isOpen && (
+            {!isOpen && t(lang, 'breakSeal').trim() && (
               <motion.p
                 className="absolute bottom-8 sm:bottom-12 text-[#45383C]/50 font-serif tracking-[0.35em] text-xs sm:text-sm uppercase"
                 animate={{ opacity: cracking ? 0 : [0.35, 0.9, 0.35] }}

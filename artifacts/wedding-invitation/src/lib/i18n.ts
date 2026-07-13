@@ -22,20 +22,20 @@ const STRINGS = {
   coupleBride: { en: 'Renad', ar: 'رناد' },
   togetherWithFamilies: {
     en: 'On an evening crowned with joy and delight',
-    ar: 'في ليلة يتكللها الفرح والسرور',
+    ar: 'في ليلةٍ يتكلّلها الفرحُ والسرور',
   },
-  honorEyebrow: { en: 'have the honor of inviting you', ar: 'يتشرف' },
+  honorEyebrow: { en: 'Together with their families', ar: 'يتشرّف كلٌّ من' },
   groomFatherTitle: { en: 'Mr.', ar: 'السيد' },
   groomFatherName: { en: 'Sameer Maghathe', ar: 'سمير المغثة' },
   brideFatherTitle: { en: 'Mr.', ar: 'السيد' },
   brideFatherName: { en: 'Emad Abulhaija', ar: 'عماد فخري أبو الهيجاء' },
   requestHonor: {
-    en: 'to the wedding celebration of their children',
+    en: 'request the honour of your presence at the wedding celebration of their beloved children',
     ar: 'بدعوتكم لحضور حفل زفاف ولديهما',
   },
   blessing: {
     en: 'With love and joy, we invite you to celebrate our wedding day with us, God willing.',
-    ar: 'بكل حب وسعادة، نتشرف بدعوتكم لمشاركتنا فرحتنا في يوم زفافنا، وذلك بمشيئة الله',
+    ar: 'بكل حبٍّ وسعادة، نتشرّف بدعوتكم لمشاركتنا فرحتنا في يوم زفافنا، وذلك بمشيئة الله تعالى',
   },
 
   // Personalized greeting
@@ -245,14 +245,18 @@ export function useLang(): Lang {
   }, [search]);
 }
 
-/** Translate a key, substituting `{placeholders}` from vars. */
+/** Translate a key, substituting `{placeholders}` from vars.
+ *
+ * A saved override wins even when it is empty — the couple clearing a line
+ * in the CMS means "remove it from the card", not "back to the default".
+ * Only keys with no override at all fall back to the built-in copy. */
 export function t(
   lang: Lang,
   key: StringKey,
   vars?: Record<string, string | number>,
 ): string {
   const override = textOverrides[key]?.[lang];
-  let s: string = override?.trim() ? override : STRINGS[key][lang];
+  let s: string = override !== undefined && override !== null ? override : STRINGS[key][lang];
   if (vars) {
     for (const [k, v] of Object.entries(vars)) {
       s = s.replaceAll(`{${k}}`, String(v));

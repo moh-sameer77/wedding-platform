@@ -176,6 +176,9 @@ function TextFieldEditor({
           filled in automatically for each guest.
         </p>
       )}
+      <p className="text-[10px] text-[#45383C]/45">
+        Leave a language empty to remove this line from that version of the card.
+      </p>
     </div>
   );
 }
@@ -388,10 +391,31 @@ export default function InvitationCms({
     }
   };
 
+  /** Store only true customizations: a value identical to the built-in
+   * default is dropped, so future improvements to the default copy reach
+   * cards the couple never customized. Explicit empties are kept — they
+   * mean "remove this line". */
+  const pruneTexts = (config: InvitationConfig): InvitationConfig => {
+    const pruned: NonNullable<InvitationConfig['texts']> = {};
+    for (const [key, value] of Object.entries(config.texts ?? {})) {
+      if (!value) continue;
+      const entry: { en?: string; ar?: string } = {};
+      const isEditable = EDITABLE_TEXTS.some((e) => e.key === key);
+      for (const lang of ['en', 'ar'] as const) {
+        const v = value[lang];
+        if (v === undefined || v === null) continue;
+        if (isEditable && v === defaultText(lang, key as StringKey)) continue;
+        entry[lang] = v;
+      }
+      if (Object.keys(entry).length > 0) pruned[key] = entry;
+    }
+    return { ...config, texts: pruned };
+  };
+
   const publish = async () => {
     setSaving(true);
     try {
-      await api.patch('/admin/event', { invitationConfig: draft });
+      await api.patch('/admin/event', { invitationConfig: pruneTexts(draft) });
       queryClient.invalidateQueries({ queryKey: ['admin-dashboard'] });
       toast({ title: 'Invitation published', description: 'Guests now see the updated card.', duration: 3000 });
     } catch (e) {

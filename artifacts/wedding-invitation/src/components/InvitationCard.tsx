@@ -4,7 +4,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
 import { Garland, FallingPetals } from '@/components/Florals';
 import { api, type InviteDetails } from '@/lib/api';
-import { t, isRtl, type Lang, type SectionId } from '@/lib/i18n';
+import { t, isRtl, type Lang, type SectionId, type StringKey } from '@/lib/i18n';
 
 /**
  * The invitation card itself — the single source of truth for how the card
@@ -294,15 +294,17 @@ export function RsvpSection({
       initial={{ opacity: 0, y: 40 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.35 }} transition={{ duration: 1, ease: 'easeOut' }}
       dir={rtl ? 'rtl' : 'ltr'}
     >
-      <motion.h2
-        className="font-script text-4xl sm:text-5xl text-[#1A1516] mb-1 sm:mb-3"
-        initial={{ opacity: 0, y: 20, filter: 'blur(5px)' }}
-        whileInView={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-        viewport={{ once: true, amount: 0.6 }}
-        transition={{ duration: 0.9, ease: 'easeOut' }}
-      >
-        {t(lang, 'rsvpTitle')}
-      </motion.h2>
+      {t(lang, 'rsvpTitle').trim() && (
+        <motion.h2
+          className="font-script text-4xl sm:text-5xl text-[#1A1516] mb-1 sm:mb-3"
+          initial={{ opacity: 0, y: 20, filter: 'blur(5px)' }}
+          whileInView={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+          viewport={{ once: true, amount: 0.6 }}
+          transition={{ duration: 0.9, ease: 'easeOut' }}
+        >
+          {t(lang, 'rsvpTitle')}
+        </motion.h2>
+      )}
 
       {answered ? (
         <div className="space-y-4 relative">
@@ -397,9 +399,11 @@ export function RsvpSection({
         </div>
       ) : (
         <>
-          <p className="text-lg sm:text-xl text-[#1A1516] mb-5 sm:mb-7 font-serif">
-            {t(lang, 'willYouJoin')}
-          </p>
+          {t(lang, 'willYouJoin').trim() && (
+            <p className="text-lg sm:text-xl text-[#1A1516] mb-5 sm:mb-7 font-serif">
+              {t(lang, 'willYouJoin')}
+            </p>
+          )}
           <div className="flex flex-col sm:flex-row gap-3 sm:gap-5 justify-center w-full px-4">
             <button
               disabled={rsvpMutation.isPending}
@@ -451,19 +455,25 @@ function NuqootSection({ lang }: { lang: Lang }) {
       initial={{ opacity: 0, y: 40 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.35 }} transition={{ duration: 1, ease: 'easeOut' }}
       dir={rtl ? 'rtl' : 'ltr'}
     >
-      <h2 className="font-script text-4xl sm:text-5xl text-[#1A1516] mb-2">
-        {t(lang, 'nuqootTitle')}
-      </h2>
-      <p
-        dir={rtl ? 'ltr' : 'rtl'}
-        lang={rtl ? 'en' : 'ar'}
-        className="text-lg sm:text-xl text-[#1A1516] mb-4"
-      >
-        {t(lang, 'nuqootSub')}
-      </p>
-      <p className="text-lg sm:text-xl text-[#1A1516] font-serif max-w-sm mx-auto leading-relaxed mb-6">
-        {t(lang, 'nuqootBody')}
-      </p>
+      {t(lang, 'nuqootTitle').trim() && (
+        <>
+          <h2 className="font-script text-4xl sm:text-5xl text-[#1A1516] mb-2">
+            {t(lang, 'nuqootTitle')}
+          </h2>
+          <p
+            dir={rtl ? 'ltr' : 'rtl'}
+            lang={rtl ? 'en' : 'ar'}
+            className="text-lg sm:text-xl text-[#1A1516] mb-4"
+          >
+            {t(lang, 'nuqootSub')}
+          </p>
+        </>
+      )}
+      {t(lang, 'nuqootBody').trim() && (
+        <p className="text-lg sm:text-xl text-[#1A1516] font-serif max-w-sm mx-auto leading-relaxed mb-6">
+          {t(lang, 'nuqootBody')}
+        </p>
+      )}
 
       <div className="relative inline-flex flex-col items-center gap-3 px-8 sm:px-12 py-6 bg-[#FDF9F8] border-[0.5px] border-[#D48A96]/50 shadow-sm">
         <div className="absolute inset-1.5 border-[0.5px] border-dashed border-[#D48A96]/25 pointer-events-none" />
@@ -488,9 +498,11 @@ function NuqootSection({ lang }: { lang: Lang }) {
           <div className="absolute inset-[3px] border-[0.5px] border-[#F9F3F3]/40 pointer-events-none" />
           {copied ? t(lang, 'copied') : t(lang, 'copyAlias')}
         </button>
-        <p className="text-sm sm:text-base text-[#1A1516] tracking-wide">
-          {t(lang, 'cliqNote')}
-        </p>
+        {t(lang, 'cliqNote').trim() && (
+          <p className="text-sm sm:text-base text-[#1A1516] tracking-wide">
+            {t(lang, 'cliqNote')}
+          </p>
+        )}
       </div>
     </motion.div>
   );
@@ -521,13 +533,15 @@ function CountdownTimer({ lang }: { lang: Lang }) {
       initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.4 }} transition={{ duration: 0.9, ease: 'easeOut' }}
       dir={rtl ? 'rtl' : 'ltr'}
     >
-      <div className="flex items-center justify-center gap-2 sm:gap-4 mb-6 sm:mb-8">
-        <div className="h-[0.5px] bg-gradient-to-r from-transparent via-[#D48A96]/50 to-transparent flex-1 max-w-[80px] sm:max-w-[110px]" />
-        <p className="tracking-[0.22em] text-sm sm:text-base uppercase text-[#1A1516] font-medium font-serif">
-          {t(lang, 'countingDown')}
-        </p>
-        <div className="h-[0.5px] bg-gradient-to-r from-transparent via-[#D48A96]/50 to-transparent flex-1 max-w-[80px] sm:max-w-[110px]" />
-      </div>
+      {t(lang, 'countingDown').trim() && (
+        <div className="flex items-center justify-center gap-2 sm:gap-4 mb-6 sm:mb-8">
+          <div className="h-[0.5px] bg-gradient-to-r from-transparent via-[#D48A96]/50 to-transparent flex-1 max-w-[80px] sm:max-w-[110px]" />
+          <p className="tracking-[0.22em] text-sm sm:text-base uppercase text-[#1A1516] font-medium font-serif">
+            {t(lang, 'countingDown')}
+          </p>
+          <div className="h-[0.5px] bg-gradient-to-r from-transparent via-[#D48A96]/50 to-transparent flex-1 max-w-[80px] sm:max-w-[110px]" />
+        </div>
+      )}
 
       <div className="flex items-center justify-center gap-2 sm:gap-4 md:gap-6">
         {[
@@ -609,92 +623,142 @@ export default function InvitationCard({
   const [showCalendar, setShowCalendar] = useState(false);
   const rtl = isRtl(lang);
 
+  // Every text line is its own item: a line the couple cleared in the CMS
+  // simply doesn't render, without touching the rest of its section.
+  const has = (key: StringKey) => t(lang, key).trim().length > 0;
+
   const sectionNode = (section: { id: SectionId; enabled: boolean }): React.ReactNode => {
     switch (section.id) {
-      case 'header':
+      case 'header': {
+        const hasFathers = has('groomFatherName') || has('brideFatherName');
+        const hasHonorBlock =
+          has('honorEyebrow') || hasFathers || has('requestHonor') || has('blessing');
         return (
           <React.Fragment key="header">
-            <motion.div
-              className="flex items-center gap-3 sm:gap-4 text-center mt-8 sm:mt-0"
-              initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.4 }} transition={{ duration: 0.9, ease: 'easeOut' }}
-            >
-              <span className="text-[#8F4557] text-lg">✦</span>
-              <p className="tracking-[0.22em] text-sm sm:text-base uppercase text-[#1A1516] font-medium">
-                {t(lang, 'togetherWithFamilies')}
-              </p>
-              <span className="text-[#8F4557] text-lg">✦</span>
-            </motion.div>
-
-            <motion.div
-              className="text-center w-full my-2 sm:my-6"
-              initial={{ opacity: 0, y: 40, scale: 0.95, filter: 'blur(6px)' }}
-              whileInView={{ opacity: 1, y: 0, scale: 1, filter: 'blur(0px)' }}
-              viewport={{ once: true, amount: 0.4 }}
-              transition={{ duration: 1.15, ease: 'easeOut' }}
-            >
-              <h1
-                className={`font-script text-6xl sm:text-7xl md:text-8xl text-[#1A1516] ${rtl ? 'leading-[1.4]' : 'leading-[1.1]'}`}
-                style={{ textShadow: '1px 2px 0px rgba(212,138,150,0.35)' }}
+            {has('togetherWithFamilies') && (
+              <motion.div
+                className="flex items-center gap-3 sm:gap-4 text-center mt-8 sm:mt-0"
+                initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.4 }} transition={{ duration: 0.9, ease: 'easeOut' }}
               >
-                {t(lang, 'coupleGroom')}
-              </h1>
-              <div className="flex items-center justify-center gap-3 sm:gap-5 my-2 sm:my-4">
-                <div className="w-10 sm:w-20 h-[0.5px] bg-gradient-to-r from-transparent to-[#D48A96]" />
-                <span className="text-3xl sm:text-5xl text-[#8F4557] font-script drop-shadow-sm">
-                  {rtl ? 'و' : '&'}
-                </span>
-                <div className="w-10 sm:w-20 h-[0.5px] bg-gradient-to-l from-transparent to-[#D48A96]" />
-              </div>
-              <h1
-                className={`font-script text-6xl sm:text-7xl md:text-8xl text-[#1A1516] ${rtl ? 'leading-[1.4]' : 'leading-[1.1]'}`}
-                style={{ textShadow: '1px 2px 0px rgba(212,138,150,0.35)' }}
+                <span className="text-[#8F4557] text-lg">✦</span>
+                <p className="tracking-[0.22em] text-sm sm:text-base uppercase text-[#1A1516] font-medium">
+                  {t(lang, 'togetherWithFamilies')}
+                </p>
+                <span className="text-[#8F4557] text-lg">✦</span>
+              </motion.div>
+            )}
+
+            {/* The invitation reads in the traditional order: the fathers
+                extend the invitation → to their children's wedding → the
+                couple's names → the blessing. */}
+            {hasHonorBlock && (
+              <motion.div
+                className="text-center max-w-sm mx-auto"
+                initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.4 }} transition={{ duration: 0.9, ease: 'easeOut' }}
               >
-                {t(lang, 'coupleBride')}
-              </h1>
-            </motion.div>
+                {has('honorEyebrow') && (
+                  <p className="text-sm sm:text-base uppercase tracking-[0.2em] text-[#8F4557] font-semibold mb-4">
+                    {t(lang, 'honorEyebrow')}
+                  </p>
+                )}
 
-            <motion.div
-              className="text-center max-w-sm mx-auto"
-              initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.4 }} transition={{ duration: 0.9, ease: 'easeOut' }}
-            >
-              <p className="text-sm sm:text-base uppercase tracking-[0.2em] text-[#8F4557] font-semibold mb-3">
-                {t(lang, 'honorEyebrow')}
-              </p>
+                {/* Fathers' names — highlighted, standing apart from the body copy */}
+                {hasFathers && (
+                  <div className="flex items-center justify-center gap-4 sm:gap-6 mb-4">
+                    {has('groomFatherName') && (
+                      <div className="flex-1">
+                        {has('groomFatherTitle') && (
+                          <p className="text-xs sm:text-sm uppercase tracking-widest text-[#1A1516]/55 mb-1">
+                            {t(lang, 'groomFatherTitle')}
+                          </p>
+                        )}
+                        <p className="text-lg sm:text-xl font-bold text-[#8F4557] font-serif leading-snug">
+                          {t(lang, 'groomFatherName')}
+                        </p>
+                      </div>
+                    )}
+                    {has('groomFatherName') && has('brideFatherName') && (
+                      <span className="text-2xl sm:text-3xl text-[#8F4557] font-script drop-shadow-sm shrink-0">
+                        {rtl ? 'و' : '&'}
+                      </span>
+                    )}
+                    {has('brideFatherName') && (
+                      <div className="flex-1">
+                        {has('brideFatherTitle') && (
+                          <p className="text-xs sm:text-sm uppercase tracking-widest text-[#1A1516]/55 mb-1">
+                            {t(lang, 'brideFatherTitle')}
+                          </p>
+                        )}
+                        <p className="text-lg sm:text-xl font-bold text-[#8F4557] font-serif leading-snug">
+                          {t(lang, 'brideFatherName')}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
 
-              {/* Fathers' names — highlighted, standing apart from the body copy */}
-              <div className="flex items-start justify-center gap-8 sm:gap-14 mb-4">
-                <div>
-                  <p className="text-xs sm:text-sm uppercase tracking-widest text-[#1A1516]/55 mb-1">
-                    {t(lang, 'groomFatherTitle')}
+                {has('requestHonor') && (
+                  <p className="text-lg sm:text-xl text-[#1A1516] leading-relaxed font-serif px-4">
+                    {t(lang, 'requestHonor').split('\n').map((line, i) => (
+                      <React.Fragment key={i}>
+                        {i > 0 && <br />}
+                        {line}
+                      </React.Fragment>
+                    ))}
                   </p>
-                  <p className="text-lg sm:text-xl font-bold text-[#8F4557] font-serif leading-snug">
-                    {t(lang, 'groomFatherName')}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs sm:text-sm uppercase tracking-widest text-[#1A1516]/55 mb-1">
-                    {t(lang, 'brideFatherTitle')}
-                  </p>
-                  <p className="text-lg sm:text-xl font-bold text-[#8F4557] font-serif leading-snug">
-                    {t(lang, 'brideFatherName')}
-                  </p>
-                </div>
-              </div>
+                )}
+              </motion.div>
+            )}
 
-              <p className="text-lg sm:text-xl text-[#1A1516] leading-relaxed font-serif px-4">
-                {t(lang, 'requestHonor').split('\n').map((line, i) => (
-                  <React.Fragment key={i}>
-                    {i > 0 && <br />}
-                    {line}
-                  </React.Fragment>
-                ))}
-              </p>
-              <p className="mt-4 text-lg sm:text-xl text-[#1A1516] leading-loose px-4">
-                {t(lang, 'blessing')}
-              </p>
-            </motion.div>
+            {(has('coupleGroom') || has('coupleBride')) && (
+              <motion.div
+                className="text-center w-full my-2 sm:my-6"
+                initial={{ opacity: 0, y: 40, scale: 0.95, filter: 'blur(6px)' }}
+                whileInView={{ opacity: 1, y: 0, scale: 1, filter: 'blur(0px)' }}
+                viewport={{ once: true, amount: 0.4 }}
+                transition={{ duration: 1.15, ease: 'easeOut' }}
+              >
+                {has('coupleGroom') && (
+                  <h1
+                    className={`font-script text-6xl sm:text-7xl md:text-8xl text-[#1A1516] ${rtl ? 'leading-[1.4]' : 'leading-[1.1]'}`}
+                    style={{ textShadow: '1px 2px 0px rgba(212,138,150,0.35)' }}
+                  >
+                    {t(lang, 'coupleGroom')}
+                  </h1>
+                )}
+                {has('coupleGroom') && has('coupleBride') && (
+                  <div className="flex items-center justify-center gap-3 sm:gap-5 my-2 sm:my-4">
+                    <div className="w-10 sm:w-20 h-[0.5px] bg-gradient-to-r from-transparent to-[#D48A96]" />
+                    <span className="text-3xl sm:text-5xl text-[#8F4557] font-script drop-shadow-sm">
+                      {rtl ? 'و' : '&'}
+                    </span>
+                    <div className="w-10 sm:w-20 h-[0.5px] bg-gradient-to-l from-transparent to-[#D48A96]" />
+                  </div>
+                )}
+                {has('coupleBride') && (
+                  <h1
+                    className={`font-script text-6xl sm:text-7xl md:text-8xl text-[#1A1516] ${rtl ? 'leading-[1.4]' : 'leading-[1.1]'}`}
+                    style={{ textShadow: '1px 2px 0px rgba(212,138,150,0.35)' }}
+                  >
+                    {t(lang, 'coupleBride')}
+                  </h1>
+                )}
+              </motion.div>
+            )}
+
+            {has('blessing') && (
+              <motion.div
+                className="text-center max-w-sm mx-auto"
+                initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.4 }} transition={{ duration: 0.9, ease: 'easeOut' }}
+              >
+                <p className="text-lg sm:text-xl text-[#1A1516] leading-loose px-4">
+                  {t(lang, 'blessing')}
+                </p>
+              </motion.div>
+            )}
           </React.Fragment>
         );
+      }
 
       case 'greeting':
         if (!invitation) return null;
@@ -706,37 +770,42 @@ export default function InvitationCard({
           >
             <div className="inline-flex flex-col items-center gap-1.5 px-8 py-4 border-[0.5px] border-[#D48A96]/50 bg-[#FDF9F8] shadow-sm relative">
               <div className="absolute inset-1 border-[0.5px] border-dashed border-[#D48A96]/25 pointer-events-none" />
-              <p className="text-sm sm:text-base uppercase tracking-[0.22em] text-[#1A1516] font-medium">
-                {t(lang, 'especiallyFor')}
-              </p>
+              {has('especiallyFor') && (
+                <p className="text-sm sm:text-base uppercase tracking-[0.22em] text-[#1A1516] font-medium">
+                  {t(lang, 'especiallyFor')}
+                </p>
+              )}
               <p className="font-script text-3xl sm:text-4xl text-[#1A1516] leading-normal">
                 {invitation.guestName}
               </p>
-              <p className="text-base sm:text-lg font-bold text-[#1A1516] tracking-wide">
-                {(() => {
-                  const seatsWord =
-                    invitation.allowedCount === 1
-                      ? t(lang, 'seatOne')
-                      : t(lang, 'seatMany');
-                  const [before, after] = t(lang, 'seatsReserved', {
-                    seats: seatsWord,
-                  }).split('{n}');
-                  return (
-                    <>
-                      {before}
-                      <span className="text-2xl sm:text-3xl text-[#8F4557]">
-                        {invitation.allowedCount}
-                      </span>
-                      {after}
-                    </>
-                  );
-                })()}
-              </p>
+              {has('seatsReserved') && (
+                <p className="text-base sm:text-lg font-bold text-[#1A1516] tracking-wide">
+                  {(() => {
+                    const seatsWord =
+                      invitation.allowedCount === 1
+                        ? t(lang, 'seatOne')
+                        : t(lang, 'seatMany');
+                    const [before, after] = t(lang, 'seatsReserved', {
+                      seats: seatsWord,
+                    }).split('{n}');
+                    return (
+                      <>
+                        {before}
+                        <span className="text-2xl sm:text-3xl text-[#8F4557]">
+                          {invitation.allowedCount}
+                        </span>
+                        {after}
+                      </>
+                    );
+                  })()}
+                </p>
+              )}
             </div>
           </motion.div>
         );
 
       case 'date':
+        if (!has('dateLine')) return null;
         return (
           <motion.div
             key="date"
@@ -761,52 +830,66 @@ export default function InvitationCard({
             <div className="p-6 sm:p-10 bg-[#FDF9F8] border-[0.5px] border-[#D48A96]/50 rounded-t-full w-full flex flex-col items-center gap-2 sm:gap-3 shadow-sm relative overflow-hidden">
               <PineTreeSVG />
               <div className="text-center z-10 mt-1">
-                <p className="text-2xl sm:text-3xl font-bold tracking-wider mb-1.5 text-[#1A1516] font-serif">
-                  {t(lang, 'venueName')}
-                </p>
-                <div className="h-[0.5px] w-10 bg-[#D48A96] mx-auto mb-2.5" />
-                <p className="text-lg sm:text-xl font-bold text-[#1A1516] tracking-wide">
-                  {t(lang, 'venueTime')}
-                </p>
-                <p className="text-sm sm:text-base text-[#1A1516] mt-2 leading-relaxed max-w-[230px] mx-auto">
-                  {t(lang, 'noChildren')}
-                </p>
+                {has('venueName') && (
+                  <>
+                    <p className="text-2xl sm:text-3xl font-bold tracking-wider mb-1.5 text-[#1A1516] font-serif">
+                      {t(lang, 'venueName')}
+                    </p>
+                    <div className="h-[0.5px] w-10 bg-[#D48A96] mx-auto mb-2.5" />
+                  </>
+                )}
+                {has('venueTime') && (
+                  <p className="text-lg sm:text-xl font-bold text-[#1A1516] tracking-wide">
+                    {t(lang, 'venueTime')}
+                  </p>
+                )}
+                {has('noChildren') && (
+                  <p className="text-sm sm:text-base text-[#1A1516] mt-2 leading-relaxed max-w-[230px] mx-auto">
+                    {t(lang, 'noChildren')}
+                  </p>
+                )}
               </div>
             </div>
 
             {/* Action buttons */}
-            <div className="flex gap-2 sm:gap-3 mt-4 w-full">
-              <a
-                href={MAPS_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex-1 flex flex-col items-center justify-center gap-1.5 py-3 border border-[#D48A96]/70 bg-transparent hover:bg-[#D48A96]/8 transition-colors text-[#1A1516] text-sm sm:text-base uppercase tracking-widest font-serif text-center leading-tight"
-              >
-                <svg className="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                  <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" />
-                  <circle cx="12" cy="9" r="2.5" />
-                </svg>
-                {t(lang, 'getDirections')}
-              </a>
+            {(has('getDirections') || has('addToCalendar')) && (
+              <div className="flex gap-2 sm:gap-3 mt-4 w-full">
+                {has('getDirections') && (
+                  <a
+                    href={MAPS_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-1 flex flex-col items-center justify-center gap-1.5 py-3 border border-[#D48A96]/70 bg-transparent hover:bg-[#D48A96]/8 transition-colors text-[#1A1516] text-sm sm:text-base uppercase tracking-widest font-serif text-center leading-tight"
+                  >
+                    <svg className="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                      <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" />
+                      <circle cx="12" cy="9" r="2.5" />
+                    </svg>
+                    {t(lang, 'getDirections')}
+                  </a>
+                )}
 
-              <div className="flex-1 relative">
-                <button
-                  onClick={() => setShowCalendar((v) => !v)}
-                  className="w-full flex flex-col items-center justify-center gap-1.5 py-3 border border-[#D48A96]/70 bg-transparent hover:bg-[#D48A96]/8 transition-colors text-[#1A1516] text-sm sm:text-base uppercase tracking-widest font-serif text-center leading-tight"
-                >
-                  <svg className="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                    <rect x="3" y="4" width="18" height="18" rx="2" />
-                    <path d="M16 2v4M8 2v4M3 10h18" />
-                  </svg>
-                  {t(lang, 'addToCalendar')}
-                </button>
-                <AnimatePresence>
-                  {showCalendar && (
-                    <CalendarMenu lang={lang} onClose={() => setShowCalendar(false)} />
-                  )}
-                </AnimatePresence>
+                {has('addToCalendar') && (
+                  <div className="flex-1 relative">
+                    <button
+                      onClick={() => setShowCalendar((v) => !v)}
+                      className="w-full flex flex-col items-center justify-center gap-1.5 py-3 border border-[#D48A96]/70 bg-transparent hover:bg-[#D48A96]/8 transition-colors text-[#1A1516] text-sm sm:text-base uppercase tracking-widest font-serif text-center leading-tight"
+                    >
+                      <svg className="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                        <rect x="3" y="4" width="18" height="18" rx="2" />
+                        <path d="M16 2v4M8 2v4M3 10h18" />
+                      </svg>
+                      {t(lang, 'addToCalendar')}
+                    </button>
+                    <AnimatePresence>
+                      {showCalendar && (
+                        <CalendarMenu lang={lang} onClose={() => setShowCalendar(false)} />
+                      )}
+                    </AnimatePresence>
+                  </div>
+                )}
               </div>
-            </div>
+            )}
           </motion.div>
         );
 
@@ -896,10 +979,18 @@ export default function InvitationCard({
             from the admin panel's Invitation tab. */}
         {visibleSections.map((section, index) => {
           const node = sectionNode(section);
-          if (node === null) return null;
+          // In the CMS, a section whose every line was cleared still needs
+          // its editing chrome — show a slim placeholder instead of nothing.
+          if (node === null && !renderSection) return null;
+          const rendered =
+            node ?? (
+              <div className="w-full max-w-md mx-auto border border-dashed border-[#D48A96]/50 bg-white/50 px-4 py-3 text-center text-xs uppercase tracking-[0.18em] text-[#45383C]/45">
+                Empty — edit this section to add text
+              </div>
+            );
           return (
             <React.Fragment key={section.id}>
-              {renderSection ? renderSection(section, node, index) : node}
+              {renderSection ? renderSection(section, rendered, index) : node}
             </React.Fragment>
           );
         })}
