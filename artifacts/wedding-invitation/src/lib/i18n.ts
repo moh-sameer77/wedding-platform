@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useSearch } from 'wouter';
 
 export type Lang = 'en' | 'ar';
@@ -239,10 +239,25 @@ export function setTextOverrides(
 
 export function useLang(): Lang {
   const search = useSearch();
-  return useMemo(() => {
+  const lang = useMemo(() => {
     const params = new URLSearchParams(search);
     return params.get('lang') === 'ar' ? 'ar' : 'en';
   }, [search]);
+
+  // The <html> tag ships hardcoded as lang="en" (see index.html) with no
+  // dir/translate attributes, while individual elements below it flip to
+  // dir="rtl" per-language. That mismatch — a page declared English at the
+  // root but mostly Arabic in content — is exactly what leads some Android
+  // Chrome builds to silently auto-translate the page, which garbles guest
+  // names and headings into phonetic nonsense (reported in production).
+  // Keeping <html lang>/dir in sync with the actual rendered language, on
+  // top of the notranslate meta tag in index.html, closes that gap.
+  useEffect(() => {
+    document.documentElement.lang = lang;
+    document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
+  }, [lang]);
+
+  return lang;
 }
 
 /** Translate a key, substituting `{placeholders}` from vars.

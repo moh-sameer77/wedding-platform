@@ -40,6 +40,18 @@ interface EventSettings {
   invitationConfig: unknown;
 }
 
+interface ByUserStat {
+  userId: number | null;
+  userName: string;
+  totalInvitations: number;
+  invitedSeats: number;
+  confirmed: number;
+  confirmedSeats: number;
+  declined: number;
+  pending: number;
+  checkedIn: number;
+}
+
 interface AdminInvitation {
   id: number;
   guestName: string;
@@ -483,7 +495,7 @@ function AdminScreen({
       </nav>
 
       <main className="max-w-6xl mx-auto p-4 sm:p-6">
-        {tab === 'overview' && <OverviewTab data={dashboardQuery.data} />}
+        {tab === 'overview' && <OverviewTab />}
         {tab === 'guests' && <GuestsTab event={dashboardQuery.data?.event ?? null} />}
         {tab === 'tables' && tablesEnabled && <TablesTab />}
         {tab === 'moderation' && <ModerationTab />}
@@ -514,22 +526,62 @@ function MetricCard({ label, value, accent }: { label: string; value: number | s
   );
 }
 
-function OverviewTab({
-  data,
-}: {
-  data: { event: EventSettings; metrics: Metrics } | undefined;
-}) {
+function OverviewTab() {
+  const me = getSessionUser();
+  const [createdByFilter, setCreatedByFilter] = useState('all');
+
+  const usersQuery = useQuery({
+    queryKey: ['admin-users'],
+    queryFn: () => api.get<{ users: AdminUser[] }>('/admin/users'),
+  });
+  const dashboardQuery = useQuery({
+    queryKey: ['admin-dashboard', createdByFilter],
+    queryFn: () =>
+      api.get<{ event: EventSettings; metrics: Metrics }>(
+        `/admin/dashboard${createdByFilter !== 'all' ? `?createdBy=${createdByFilter}` : ''}`,
+      ),
+    refetchInterval: 10000,
+  });
+  const byUserQuery = useQuery({
+    queryKey: ['admin-dashboard-by-user'],
+    queryFn: () => api.get<{ byUser: ByUserStat[] }>('/admin/dashboard/by-user'),
+    refetchInterval: 10000,
+  });
   const auditQuery = useQuery({
     queryKey: ['admin-checkins'],
     queryFn: () => api.get<{ checkins: AuditCheckin[] }>('/admin/checkins'),
     refetchInterval: 10000,
   });
 
-  if (!data) return <p className="text-sm opacity-60">Loading…</p>;
-  const m = data.metrics;
+  if (!dashboardQuery.data) return <p className="text-sm opacity-60">Loading…</p>;
+  const m = dashboardQuery.data.metrics;
+  const responded = m.confirmed + m.declined;
+  const responseRate = m.totalInvitations > 0 ? Math.round((responded / m.totalInvitations) * 100) : 0;
+  const byUser = byUserQuery.data?.byUser ?? [];
 
   return (
     <div className="space-y-6">
+      <div className="flex items-center gap-2 text-xs">
+        <span className="text-[10px] uppercase tracking-widest opacity-60">Filter by</span>
+        <select
+          value={createdByFilter}
+          onChange={(e) => setCreatedByFilter(e.target.value)}
+          className="px-2 py-1.5 border border-[#D48A96]/40 bg-white/70 text-xs focus:outline-none"
+        >
+          <option value="all">Everyone</option>
+          {me && <option value="me">Me ({me.name})</option>}
+          {(usersQuery.data?.users ?? [])
+            .filter((u) => u.id !== me?.id)
+            .map((u) => (
+              <option key={u.id} value={u.id}>{u.name}</option>
+            ))}
+        </select>
+        {createdByFilter !== 'all' && (
+          <span className="text-[10px] opacity-50">
+            RSVP and seat stats below are scoped to this person's invitations. Uploads/messages stay event-wide.
+          </span>
+        )}
+      </div>
       <section>
         <h2 className="text-xs uppercase tracking-[0.25em] text-[#45383C]/50 mb-3">RSVP</h2>
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
@@ -537,17 +589,69 @@ function OverviewTab({
           <MetricCard label="Confirmed" value={m.confirmed} accent />
           <MetricCard label="Declined" value={m.declined} />
           <MetricCard label="Pending" value={m.pending} />
-          <MetricCard label="Expected guests" value={m.expectedGuests} accent />
+          <MetricCard label="Response rate" value={`${responseRate}%`} accent />
         </div>
       </section>
       <section>
-        <h2 className="text-xs uppercase tracking-[0.25em] text-[#45383C]/50 mb-3">Wedding day</h2>
+        <h2 className="text-xs uppercase tracking-[0.25em] text-[#45383C]/50 mb-3">Seats</h2>
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
           <MetricCard label="Invited seats" value={m.invitedGuests} />
+          <MetricCard label="Expected guests" value={m.expectedGuests} accent />
           <MetricCard label="Checked in" value={m.checkedIn} accent />
           <MetricCard label="Extra guests" value={m.overrideGuests} />
+          <MetricCard label="No-shows so far" value={Math.max(0, m.expectedGuests - m.checkedIn)} />
+        </div>
+      </section>
+      <section>
+        <h2 className="text-xs uppercase tracking-[0.25em] text-[#45383C]/50 mb-3">
+          Moderation (event-wide)
+        </h2>
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
           <MetricCard label="Uploads" value={m.totalUploads} />
+          <MetricCard label="Messages" value={m.totalMessages} />
           <MetricCard label="Pending approval" value={m.pendingModeration} accent />
+        </div>
+      </section>
+      <section>
+        <h2 className="text-xs uppercase tracking-[0.25em] text-[#45383C]/50 mb-3">
+          By team member
+        </h2>
+        <div className="bg-[#F9F3F3] border border-[#D48A96]/30 overflow-x-auto">
+          <table className="w-full text-sm min-w-[720px]">
+            <thead>
+              <tr className="text-left text-[10px] uppercase tracking-[0.15em] text-[#45383C]/50 border-b border-[#D48A96]/25">
+                <th className="px-4 py-3">Team member</th>
+                <th className="px-2 py-3 text-center">Invitations</th>
+                <th className="px-2 py-3 text-center">Invited seats</th>
+                <th className="px-2 py-3 text-center">Confirmed</th>
+                <th className="px-2 py-3 text-center">Confirmed seats</th>
+                <th className="px-2 py-3 text-center">Declined</th>
+                <th className="px-2 py-3 text-center">Pending</th>
+                <th className="px-2 py-3 text-center">Checked in</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[#D48A96]/15">
+              {byUser.map((row) => (
+                <tr key={row.userId ?? 'unassigned'}>
+                  <td className="px-4 py-2.5 font-medium">{row.userName}</td>
+                  <td className="px-2 py-2.5 text-center tabular-nums">{row.totalInvitations}</td>
+                  <td className="px-2 py-2.5 text-center tabular-nums">{row.invitedSeats}</td>
+                  <td className="px-2 py-2.5 text-center tabular-nums text-emerald-700">{row.confirmed}</td>
+                  <td className="px-2 py-2.5 text-center tabular-nums text-emerald-700">{row.confirmedSeats}</td>
+                  <td className="px-2 py-2.5 text-center tabular-nums text-red-700">{row.declined}</td>
+                  <td className="px-2 py-2.5 text-center tabular-nums text-amber-700">{row.pending}</td>
+                  <td className="px-2 py-2.5 text-center tabular-nums text-[#B25A6C] font-semibold">{row.checkedIn}</td>
+                </tr>
+              ))}
+              {byUser.length === 0 && (
+                <tr>
+                  <td colSpan={8} className="px-4 py-6 text-center opacity-50">
+                    No guests yet.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
       </section>
       <section>
@@ -1015,8 +1119,24 @@ function GuestsTab({ event }: { event: EventSettings | null }) {
             {invitations.map((inv) => (
               <tr key={inv.id} className={inv.status === 'cancelled' ? 'opacity-45' : ''}>
                 <td className="px-4 py-2.5">
-                  <p className="font-medium">{inv.guestName}</p>
-                  <p className="text-xs opacity-55">{inv.phone ?? '—'}</p>
+                  <input
+                    defaultValue={inv.guestName}
+                    onBlur={(e) => {
+                      const v = e.target.value.trim();
+                      if (v && v !== inv.guestName) patchInvitation(inv.id, { guestName: v });
+                    }}
+                    className="font-medium w-full px-1.5 py-1 border border-transparent hover:border-[#D48A96]/30 focus:border-[#B25A6C] bg-transparent focus:bg-white/60 outline-none"
+                  />
+                  <input
+                    defaultValue={inv.phone ?? ''}
+                    placeholder="—"
+                    type="tel"
+                    onBlur={(e) => {
+                      const v = e.target.value.trim();
+                      if (v !== (inv.phone ?? '')) patchInvitation(inv.id, { phone: v || null });
+                    }}
+                    className="text-xs opacity-70 w-full px-1.5 py-0.5 border border-transparent hover:border-[#D48A96]/30 focus:border-[#B25A6C] bg-transparent focus:bg-white/60 outline-none"
+                  />
                 </td>
                 <td className="px-2 py-2.5">
                   <input

@@ -173,25 +173,44 @@ router.delete("/admin/users/:id", requireAuth("admin"), async (req, res, next) =
   }
 });
 
-/** Dashboard metrics (FR-035). */
-router.get("/admin/dashboard", requireAuth("admin"), async (_req, res, next) => {
+/** Dashboard metrics (FR-035). Optionally scoped to whoever added each guest
+ * via ?createdBy=me|<userId>, same convention as GET /admin/invitations. */
+router.get("/admin/dashboard", requireAuth("admin"), async (req, res, next) => {
   try {
     const event = await currentEvent();
     if (!event) {
       res.status(404).json({ error: "No event configured" });
       return;
     }
+    const createdByParam = req.query["createdBy"];
+    let creatorId: number | undefined;
+    if (typeof createdByParam === "string" && createdByParam.length > 0) {
+      const id = createdByParam === "me" ? req.user!.id : Number(createdByParam);
+      if (Number.isInteger(id)) creatorId = id;
+    }
+    const invitationConditions = [eq(invitationsTable.eventId, event.id)];
+    if (creatorId !== undefined) {
+      invitationConditions.push(eq(invitationsTable.createdByUserId, creatorId));
+    }
     const invitations = await db
       .select()
       .from(invitationsTable)
-      .where(eq(invitationsTable.eventId, event.id));
+      .where(and(...invitationConditions));
+    const checkinConditions = [eq(checkinsTable.eventId, event.id)];
+    if (creatorId !== undefined) {
+      checkinConditions.push(eq(invitationsTable.createdByUserId, creatorId));
+    }
     const [checkinAgg] = await db
       .select({
         total: sql<number>`coalesce(sum(${checkinsTable.count}), 0)`,
         overrides: sql<number>`coalesce(sum(case when ${checkinsTable.isOverride} then ${checkinsTable.count} else 0 end), 0)`,
       })
       .from(checkinsTable)
-      .where(eq(checkinsTable.eventId, event.id));
+      .innerJoin(
+        invitationsTable,
+        eq(checkinsTable.invitationId, invitationsTable.id),
+      )
+      .where(and(...checkinConditions));
     const [pendingUploads] = await db
       .select({ count: sql<number>`count(*)` })
       .from(memoryUploadsTable)
@@ -245,6 +264,71 @@ router.get("/admin/dashboard", requireAuth("admin"), async (_req, res, next) => 
     next(err);
   }
 });
+
+/** Per-team-member RSVP/seat breakdown, so an admin can see how their own
+ * invited guests are trending vs. everyone else's (FR-035 addendum). */
+router.get(
+  "/admin/dashboard/by-user",
+  requireAuth("admin"),
+  async (_req, res, next) => {
+    try {
+      const event = await currentEvent();
+      if (!event) {
+        res.status(404).json({ error: "No event configured" });
+        return;
+      }
+      const rows = await db
+        .select({
+          userId: invitationsTable.createdByUserId,
+          userName: usersTable.name,
+          totalInvitations: sql<number>`count(*)`,
+          invitedSeats: sql<number>`coalesce(sum(${invitationsTable.allowedCount}), 0)`,
+          confirmed: sql<number>`coalesce(sum(case when ${invitationsTable.rsvpStatus} = 'confirmed' then 1 else 0 end), 0)`,
+          confirmedSeats: sql<number>`coalesce(sum(case when ${invitationsTable.rsvpStatus} = 'confirmed' then coalesce(${invitationsTable.rsvpCount}, ${invitationsTable.allowedCount}) else 0 end), 0)`,
+          declined: sql<number>`coalesce(sum(case when ${invitationsTable.rsvpStatus} = 'declined' then 1 else 0 end), 0)`,
+          pending: sql<number>`coalesce(sum(case when ${invitationsTable.rsvpStatus} = 'pending' then 1 else 0 end), 0)`,
+        })
+        .from(invitationsTable)
+        .leftJoin(usersTable, eq(invitationsTable.createdByUserId, usersTable.id))
+        .where(eq(invitationsTable.eventId, event.id))
+        .groupBy(invitationsTable.createdByUserId, usersTable.name);
+
+      // Separate grouped query for check-ins, joined via invitation -> creator,
+      // so a guest with several check-in scans doesn't multiply the seat sums above.
+      const checkinRows = await db
+        .select({
+          userId: invitationsTable.createdByUserId,
+          checkedIn: sql<number>`coalesce(sum(${checkinsTable.count}), 0)`,
+        })
+        .from(checkinsTable)
+        .innerJoin(
+          invitationsTable,
+          eq(checkinsTable.invitationId, invitationsTable.id),
+        )
+        .where(eq(checkinsTable.eventId, event.id))
+        .groupBy(invitationsTable.createdByUserId);
+      const checkedInByUser = new Map(
+        checkinRows.map((r) => [r.userId, Number(r.checkedIn)]),
+      );
+
+      res.json({
+        byUser: rows.map((r) => ({
+          userId: r.userId,
+          userName: r.userName ?? "Unassigned",
+          totalInvitations: Number(r.totalInvitations),
+          invitedSeats: Number(r.invitedSeats),
+          confirmed: Number(r.confirmed),
+          confirmedSeats: Number(r.confirmedSeats),
+          declined: Number(r.declined),
+          pending: Number(r.pending),
+          checkedIn: checkedInByUser.get(r.userId) ?? 0,
+        })),
+      });
+    } catch (err) {
+      next(err);
+    }
+  },
+);
 
 const eventPatchSchema = z.object({
   status: z.enum(["draft", "live", "archived"]).optional(),
