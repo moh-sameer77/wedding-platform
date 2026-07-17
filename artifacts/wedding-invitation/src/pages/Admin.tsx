@@ -1188,8 +1188,10 @@ function GuestsTab({ event }: { event: EventSettings | null }) {
                   />
                 </td>
                 <td className="px-2 py-2.5">
-                  <span
-                    className={`px-2 py-1 text-[10px] uppercase tracking-wide font-semibold ${
+                  <select
+                    value={inv.rsvpStatus}
+                    onChange={(e) => patchInvitation(inv.id, { rsvpStatus: e.target.value })}
+                    className={`px-2 py-1 text-[10px] uppercase tracking-wide font-semibold border-0 focus:outline-none focus:ring-1 focus:ring-[#B25A6C] ${
                       inv.rsvpStatus === 'confirmed'
                         ? 'bg-emerald-100 text-emerald-800'
                         : inv.rsvpStatus === 'declined'
@@ -1197,9 +1199,13 @@ function GuestsTab({ event }: { event: EventSettings | null }) {
                           : 'bg-amber-100 text-amber-800'
                     }`}
                   >
-                    {inv.rsvpStatus}
-                    {inv.rsvpStatus === 'confirmed' && inv.rsvpCount ? ` · ${inv.rsvpCount}` : ''}
-                  </span>
+                    <option value="pending">pending</option>
+                    <option value="confirmed">confirmed</option>
+                    <option value="declined">declined</option>
+                  </select>
+                  {inv.rsvpStatus === 'confirmed' && inv.rsvpCount ? (
+                    <p className="text-[10px] opacity-55 mt-0.5">{inv.rsvpCount} attending</p>
+                  ) : null}
                 </td>
                 <td className="hidden">
                   <select
