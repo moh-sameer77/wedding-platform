@@ -64,6 +64,7 @@ interface AdminInvitation {
   tableName: string | null;
   token: string;
   status: string;
+  messageSent: boolean;
   checkedIn: number;
   createdByUserId: number | null;
   createdByName: string | null;
@@ -695,6 +696,8 @@ function GuestsTab({ event }: { event: EventSettings | null }) {
   const me = getSessionUser();
   const [form, setForm] = useState({ guestName: '', phone: '', allowedCount: 2, tableId: '' });
   const [createdByFilter, setCreatedByFilter] = useState('all');
+  const [messageFilter, setMessageFilter] = useState<'all' | 'sent' | 'unsent'>('all');
+  const [searchQuery, setSearchQuery] = useState('');
   const [importReport, setImportReport] = useState<GuestImportReport | null>(null);
   const savedWhatsapp = normalizeInvitationConfig(event?.invitationConfig).whatsappMessage;
   const [whatsappDraft, setWhatsappDraft] = useState({
@@ -884,6 +887,7 @@ function GuestsTab({ event }: { event: EventSettings | null }) {
       ? `https://wa.me/${phone}?text=${text}`
       : `https://wa.me/?text=${text}`;
     window.open(url, '_blank');
+    if (!inv.messageSent) patchInvitation(inv.id, { messageSent: true });
   };
 
   const copyLink = async (inv: AdminInvitation, lang: 'en' | 'ar') => {
@@ -894,7 +898,15 @@ function GuestsTab({ event }: { event: EventSettings | null }) {
     });
   };
 
-  const invitations = invitationsQuery.data?.invitations ?? [];
+  const allInvitations = invitationsQuery.data?.invitations ?? [];
+  const invitations = allInvitations.filter((inv) => {
+    if (messageFilter === 'sent' && !inv.messageSent) return false;
+    if (messageFilter === 'unsent' && inv.messageSent) return false;
+    const q = searchQuery.trim().toLowerCase();
+    if (q && !inv.guestName.toLowerCase().includes(q) && !(inv.phone ?? '').toLowerCase().includes(q))
+      return false;
+    return true;
+  });
   const tables: AdminTable[] = [];
 
   return (
@@ -1084,21 +1096,44 @@ function GuestsTab({ event }: { event: EventSettings | null }) {
         </div>
       </section>
 
-      <div className="flex items-center gap-2 text-xs">
-        <span className="text-[10px] uppercase tracking-widest opacity-60">Added by</span>
-        <select
-          value={createdByFilter}
-          onChange={(e) => setCreatedByFilter(e.target.value)}
-          className="px-2 py-1.5 border border-[#D48A96]/40 bg-white/70 text-xs focus:outline-none"
-        >
-          <option value="all">Everyone</option>
-          {me && <option value="me">Me ({me.name})</option>}
-          {(usersQuery.data?.users ?? [])
-            .filter((u) => u.id !== me?.id)
-            .map((u) => (
-              <option key={u.id} value={u.id}>{u.name}</option>
-            ))}
-        </select>
+      <div className="flex flex-wrap items-center gap-3 text-xs">
+        <input
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="Search name or phone…"
+          className="px-3 py-1.5 border border-[#D48A96]/40 bg-white/70 text-xs focus:outline-none focus:border-[#B25A6C] w-56"
+        />
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] uppercase tracking-widest opacity-60">Added by</span>
+          <select
+            value={createdByFilter}
+            onChange={(e) => setCreatedByFilter(e.target.value)}
+            className="px-2 py-1.5 border border-[#D48A96]/40 bg-white/70 text-xs focus:outline-none"
+          >
+            <option value="all">Everyone</option>
+            {me && <option value="me">Me ({me.name})</option>}
+            {(usersQuery.data?.users ?? [])
+              .filter((u) => u.id !== me?.id)
+              .map((u) => (
+                <option key={u.id} value={u.id}>{u.name}</option>
+              ))}
+          </select>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] uppercase tracking-widest opacity-60">Message</span>
+          <select
+            value={messageFilter}
+            onChange={(e) => setMessageFilter(e.target.value as 'all' | 'sent' | 'unsent')}
+            className="px-2 py-1.5 border border-[#D48A96]/40 bg-white/70 text-xs focus:outline-none"
+          >
+            <option value="all">All</option>
+            <option value="sent">Sent</option>
+            <option value="unsent">Not sent</option>
+          </select>
+        </div>
+        <span className="opacity-50">
+          {invitations.length} of {allInvitations.length} guest{allInvitations.length === 1 ? '' : 's'}
+        </span>
       </div>
 
       <section className="bg-[#F9F3F3] border border-[#D48A96]/30 overflow-x-auto">
@@ -1111,6 +1146,7 @@ function GuestsTab({ event }: { event: EventSettings | null }) {
               <th className="hidden">Table</th>
               <th className="px-2 py-3">Checked in</th>
               <th className="px-2 py-3">Added by</th>
+              <th className="px-2 py-3">Message</th>
               <th className="px-2 py-3">Share</th>
               <th className="px-2 py-3"></th>
             </tr>
@@ -1189,6 +1225,19 @@ function GuestsTab({ event }: { event: EventSettings | null }) {
                 <td className="px-2 py-2.5 text-xs opacity-70">
                   {inv.createdByName ?? '—'}
                 </td>
+                <td className="px-2 py-2.5">
+                  <button
+                    onClick={() => patchInvitation(inv.id, { messageSent: !inv.messageSent })}
+                    title={inv.messageSent ? 'Click to mark as not sent' : 'Click to mark as sent'}
+                    className={`px-2 py-1 text-[10px] uppercase tracking-wide font-semibold ${
+                      inv.messageSent
+                        ? 'bg-emerald-100 text-emerald-800'
+                        : 'bg-[#45383C]/10 text-[#45383C]/60'
+                    }`}
+                  >
+                    {inv.messageSent ? '✓ Sent' : 'Not sent'}
+                  </button>
+                </td>
                 <td className="px-2 py-2.5 whitespace-nowrap">
                   <div className="flex items-center gap-1.5 text-xs">
                     <span className="text-emerald-700 font-medium">WhatsApp</span>
@@ -1249,8 +1298,10 @@ function GuestsTab({ event }: { event: EventSettings | null }) {
             ))}
             {invitations.length === 0 && (
               <tr>
-                <td colSpan={8} className="px-4 py-8 text-center opacity-50">
-                  No guests yet — add your first invitation above.
+                <td colSpan={9} className="px-4 py-8 text-center opacity-50">
+                  {allInvitations.length === 0
+                    ? 'No guests yet — add your first invitation above.'
+                    : 'No guests match your search/filters.'}
                 </td>
               </tr>
             )}

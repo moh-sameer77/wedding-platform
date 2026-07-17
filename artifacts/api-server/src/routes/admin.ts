@@ -537,6 +537,7 @@ const invitationPatchSchema = z.object({
   tableId: z.number().int().nullable().optional(),
   status: z.enum(["active", "cancelled"]).optional(),
   rsvpStatus: z.enum(["pending", "confirmed", "declined"]).optional(),
+  messageSent: z.boolean().optional(),
 });
 
 router.patch(
